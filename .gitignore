@@ -1,0 +1,11 @@
+.venv/
+engine/
+darbai/
+langas/
+build/
+dist/
+test/
+nustatymai.json
+app/icon.ico
+__pycache__/
+*.zip

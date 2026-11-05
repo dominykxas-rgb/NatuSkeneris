@@ -1,0 +1,90 @@
+name: Windows exe
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      PYTHONPATH: ${{ github.workspace }}\engine;${{ github.workspace }}\app
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Paketai
+        run: python -m pip install -r requirements.txt pyinstaller
+
+      - name: homr variklis
+        shell: pwsh
+        run: |
+          $c = (Get-Content homr-version.txt).Trim()
+          Invoke-WebRequest "https://github.com/liebharc/homr/archive/$c.zip" -OutFile homr.zip
+          Expand-Archive homr.zip -DestinationPath homr-src
+          New-Item -ItemType Directory -Force engine | Out-Null
+          Copy-Item "homr-src\homr-$c\homr" engine -Recurse
+          Copy-Item "homr-src\homr-$c\LICENSE" engine\homr-LICENSE.txt
+
+      - name: Atpažinimo modeliai
+        run: python app/run_homr.py --init --no-title
+
+      - name: Piktograma
+        run: python app/make_icon.py
+
+      - name: Exe kūrimas
+        run: pyinstaller NatuSkeneris.spec --noconfirm
+
+      - name: Patikra su tikromis natomis
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force test | Out-Null
+          $base = "https://raw.githubusercontent.com/Audiveris/audiveris/master/data/examples"
+          Invoke-WebRequest "$base/chula.png" -OutFile test\chula.png
+          Invoke-WebRequest "$base/BachInvention5.jpg" -OutFile test\bach.jpg
+          $exe = "dist\NatuSkeneris\NatuSkeneris.exe"
+          $fail = 0
+          foreach ($img in @("chula.png", "bach.jpg")) {
+            $out = "test\out-$img"
+            $p = Start-Process $exe -ArgumentList "--selftest", "test\$img", $out -Wait -PassThru
+            Get-Content "$out\selftest.log" -ErrorAction SilentlyContinue
+            if ($p.ExitCode -ne 0) { Write-Host "::error::$img patikra nepavyko"; $fail = 1 }
+          }
+          exit $fail
+
+      - name: Rezultatų išsaugojimas (peržiūrai)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: patikros-rezultatai
+          path: test/
+          if-no-files-found: ignore
+
+      - name: Supakavimas
+        shell: pwsh
+        run: |
+          Copy-Item SKAITYK.md dist\NatuSkeneris\
+          Copy-Item engine\homr-LICENSE.txt dist\NatuSkeneris\
+          Compress-Archive dist\NatuSkeneris NatuSkeneris-Windows.zip
+
+      - name: Išleidimas (Releases → naujausia)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete naujausia --yes --cleanup-tag 2>$null
+          $global:LASTEXITCODE = 0
+          gh release create naujausia NatuSkeneris-Windows.zip `
+            --title "Natų skeneris (naujausia Windows versija)" `
+            --notes "Išarchyvuok ir paleisk NatuSkeneris.exe. Commit: ${{ github.sha }}" `
+            --target ${{ github.sha }}

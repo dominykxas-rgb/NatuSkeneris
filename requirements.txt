@@ -1,0 +1,13 @@
+# homr atpažinimo variklio priklausomybės
+numpy>=2.4.2,<3
+opencv-python-headless>=4.13.0.92,<5
+Pillow>=12.1.1,<13
+typing_extensions>=4.15.0,<5
+rapidocr>=3.7.0,<4
+requests>=2.32.5,<3
+pypdfium2>=4,<6
+onnxruntime>=1.24.1,<2
+# natų peržiūra
+verovio>=5
+# iPhone HEIC nuotraukos
+pillow-heif
