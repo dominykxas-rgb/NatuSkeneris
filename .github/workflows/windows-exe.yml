@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: windows-exe
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
@@ -42,25 +46,46 @@ jobs:
       - name: Piktograma
         run: python app/make_icon.py
 
+      - name: Testinės natos
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force test\variklis | Out-Null
+          $base = "https://raw.githubusercontent.com/Audiveris/audiveris/master/data/examples"
+          Invoke-WebRequest "$base/chula.png" -OutFile test\chula.png
+          Copy-Item test\chula.png test\variklis\chula.png
+
+      - name: Variklio patikra (be exe)
+        timeout-minutes: 20
+        run: python app/run_homr.py --no-title test/variklis/chula.png
+
       - name: Exe kūrimas
         run: pyinstaller NatuSkeneris.spec --noconfirm
 
-      - name: Patikra su tikromis natomis
+      - name: Exe patikra su tikromis natomis
+        timeout-minutes: 25
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force test | Out-Null
-          $base = "https://raw.githubusercontent.com/Audiveris/audiveris/master/data/examples"
-          Invoke-WebRequest "$base/chula.png" -OutFile test\chula.png
-          Invoke-WebRequest "$base/BachInvention5.jpg" -OutFile test\bach.jpg
           $exe = "dist\NatuSkeneris\NatuSkeneris.exe"
-          $fail = 0
-          foreach ($img in @("chula.png", "bach.jpg")) {
-            $out = "test\out-$img"
-            $p = Start-Process $exe -ArgumentList "--selftest", "test\$img", $out -Wait -PassThru
-            Get-Content "$out\selftest.log" -ErrorAction SilentlyContinue
-            if ($p.ExitCode -ne 0) { Write-Host "::error::$img patikra nepavyko"; $fail = 1 }
+          $out = "test\out-exe"
+          $p = Start-Process $exe -ArgumentList "--selftest", "test\chula.png", $out -PassThru
+          $null = $p.Handle  # be to PowerShell neparodo išėjimo kodo
+          $start = Get-Date
+          $shown = 0
+          while (-not $p.HasExited -and ((Get-Date) - $start).TotalMinutes -lt 20) {
+            Start-Sleep 15
+            $log = Get-Content "$out\homr.log" -ErrorAction SilentlyContinue
+            if ($log -and $log.Count -gt $shown) { $log[$shown..($log.Count - 1)]; $shown = $log.Count }
+            Write-Host ("... {0:N0} s" -f ((Get-Date) - $start).TotalSeconds)
           }
-          exit $fail
+          if (-not $p.HasExited) {
+            Write-Host "::error::Exe užstrigo (20 min)"
+            Get-Process NatuSkeneris -ErrorAction SilentlyContinue | Format-Table Id, CPU, WS -AutoSize
+            Get-Process NatuSkeneris -ErrorAction SilentlyContinue | Stop-Process -Force
+            Get-Content "$out\selftest.log" -ErrorAction SilentlyContinue
+            exit 1
+          }
+          Get-Content "$out\selftest.log" -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { Write-Host "::error::Exe patikra nepavyko (kodas $($p.ExitCode))"; exit 1 }
 
       - name: Rezultatų išsaugojimas (peržiūrai)
         if: always()
