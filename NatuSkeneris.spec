@@ -6,7 +6,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [("app/web", "web")]
 binaries = []
-hiddenimports = ["homr_entry", "photo_prep"]
+hiddenimports = ["homr_entry", "photo_prep", "natu_skeneris"]
 
 for pkg in ["homr", "rapidocr", "verovio", "pypdfium2", "pypdfium2_raw", "pillow_heif",
             "onnxruntime", "cv2"]:
@@ -16,7 +16,7 @@ for pkg in ["homr", "rapidocr", "verovio", "pypdfium2", "pypdfium2_raw", "pillow
     hiddenimports += h
 
 a = Analysis(
-    ["app/natu_skeneris.py"],
+    ["app/launcher.py"],
     pathex=["app", "engine"],
     datas=datas,
     binaries=binaries,

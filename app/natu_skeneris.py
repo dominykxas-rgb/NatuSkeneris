@@ -124,7 +124,12 @@ def run_homr_process(inputs: list[str], cwd: Path, on_line=None, should_stop=Non
                 if should_stop and should_stop():
                     proc.kill()
                 time.sleep(0.3)
-    return proc.wait()
+    code = proc.wait()
+    crash = cwd / "homr-crash.log"
+    if crash.exists() and on_line:
+        for line in crash.read_text(encoding="utf-8", errors="replace").splitlines():
+            on_line(line)
+    return code
 
 
 # ---------------------------------------------------------------- atpažinimas

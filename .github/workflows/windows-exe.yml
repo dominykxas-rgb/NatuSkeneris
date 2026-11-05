@@ -62,7 +62,7 @@ jobs:
         run: pyinstaller NatuSkeneris.spec --noconfirm
 
       - name: Exe patikra su tikromis natomis
-        timeout-minutes: 25
+        timeout-minutes: 15
         shell: pwsh
         run: |
           $exe = "dist\NatuSkeneris\NatuSkeneris.exe"
@@ -71,20 +71,23 @@ jobs:
           $null = $p.Handle  # be to PowerShell neparodo išėjimo kodo
           $start = Get-Date
           $shown = 0
-          while (-not $p.HasExited -and ((Get-Date) - $start).TotalMinutes -lt 20) {
-            Start-Sleep 15
+          while (-not $p.HasExited -and ((Get-Date) - $start).TotalMinutes -lt 10) {
+            Start-Sleep 10
             $log = Get-Content "$out\homr.log" -ErrorAction SilentlyContinue
             if ($log -and $log.Count -gt $shown) { $log[$shown..($log.Count - 1)]; $shown = $log.Count }
             Write-Host ("... {0:N0} s" -f ((Get-Date) - $start).TotalSeconds)
           }
-          if (-not $p.HasExited) {
-            Write-Host "::error::Exe užstrigo (20 min)"
+          $hung = -not $p.HasExited
+          if ($hung) {
+            Write-Host "::error::Exe užstrigo (10 min)"
             Get-Process NatuSkeneris -ErrorAction SilentlyContinue | Format-Table Id, CPU, WS -AutoSize
             Get-Process NatuSkeneris -ErrorAction SilentlyContinue | Stop-Process -Force
-            Get-Content "$out\selftest.log" -ErrorAction SilentlyContinue
-            exit 1
           }
-          Get-Content "$out\selftest.log" -ErrorAction SilentlyContinue
+          foreach ($f in Get-ChildItem $out -Filter *.log -ErrorAction SilentlyContinue) {
+            Write-Host "----- $($f.Name) -----"
+            Get-Content $f.FullName
+          }
+          if ($hung) { exit 1 }
           if ($p.ExitCode -ne 0) { Write-Host "::error::Exe patikra nepavyko (kodas $($p.ExitCode))"; exit 1 }
 
       - name: Rezultatų išsaugojimas (peržiūrai)
