@@ -98,6 +98,8 @@ def homr_command(log_file: Path, inputs: list[str]) -> list[str]:
 def run_homr_process(inputs: list[str], cwd: Path, on_line=None, should_stop=None,
                      on_start=None) -> int:
     """Paleidžia atpažinimą atskirame procese ir seka jo žurnalą."""
+    cwd = Path(cwd).resolve()
+    inputs = [str(Path(p).resolve()) for p in inputs]
     log_file = cwd / "homr.log"
     log_file.write_text("", encoding="utf-8")
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
@@ -470,11 +472,11 @@ def watchdog(server: ThreadingHTTPServer) -> None:
 
 def selftest(image: str, out_dir: str) -> int:
     """Patikra kūrimo metu: atpažįsta paveikslėlį ir atvaizduoja rezultatą."""
-    out = Path(out_dir)
+    out = Path(out_dir).resolve()
     out.mkdir(parents=True, exist_ok=True)
     # Exe be konsolės neturi stdout, todėl ataskaita rašoma į failą.
     sys.stdout = sys.stderr = open(out / "selftest.log", "w", encoding="utf-8", buffering=1)  # noqa: SIM115
-    src = Path(image)
+    src = Path(image).resolve()
     if src.suffix.lower() == ".pdf":
         inputs = [str(shutil.copy(src, out / src.name))]
     else:

@@ -83,8 +83,10 @@ jobs:
             Get-Process NatuSkeneris -ErrorAction SilentlyContinue | Format-Table Id, CPU, WS -AutoSize
             Get-Process NatuSkeneris -ErrorAction SilentlyContinue | Stop-Process -Force
           }
-          foreach ($f in Get-ChildItem $out -Filter *.log -ErrorAction SilentlyContinue) {
-            Write-Host "----- $($f.Name) -----"
+          $logs = @(Get-ChildItem $out -Filter *.log -ErrorAction SilentlyContinue) +
+                  @(Get-ChildItem "$env:LOCALAPPDATA\NatuSkeneris" -Filter *.log -ErrorAction SilentlyContinue)
+          foreach ($f in $logs) {
+            Write-Host "----- $($f.FullName) -----"
             Get-Content $f.FullName
           }
           if ($hung) { exit 1 }
