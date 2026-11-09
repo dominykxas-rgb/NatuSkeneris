@@ -1,10 +1,10 @@
-"""NatuSkeneris.exe paleidimo taškas.
+"""Penkline.exe paleidimo taškas.
 
 Exe neturi konsolės, todėl bet kokia klaida paleidžiant būtų parodyta kaip langas, kuris
 laukia paspaudimo (ir „pakimba“ automatiniame tikrinime). Čia klaidos įrašomos į failą:
 - režimu --selftest: į rezultatų aplanką (crash.log);
 - režimu --homr: į variklio žurnalą (--log failą);
-- įprastai: į %LOCALAPPDATA%\\NatuSkeneris\\klaida.log ir parodomos trumpu pranešimu.
+- įprastai: į %LOCALAPPDATA%\\Penkline\\klaida.log ir parodomos trumpu pranešimu.
 """
 
 import os
@@ -23,7 +23,7 @@ def _crash_file() -> Path:
         i = args.index("--log")
         if i + 1 < len(args):
             return Path(args[i + 1]).with_name("homr-crash.log")
-    base = Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "NatuSkeneris"
+    base = Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "Penkline"
     base.mkdir(parents=True, exist_ok=True)
     return base / "klaida.log"
 
@@ -48,10 +48,10 @@ def _report(text: str) -> None:
 
             ctypes.windll.user32.MessageBoxW(
                 None,
-                "Natų skeneris susidūrė su klaida ir užsidarys.\n\n"
+                "Penklinė užsidaro dėl klaidos.\n\n"
                 + text[-1500:]
                 + f"\n\nVisa informacija: {_crash_file()}",
-                "Natų skeneris",
+                "Penklinė",
                 0x10,
             )
         except Exception:

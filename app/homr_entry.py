@@ -1,6 +1,6 @@
 """homr atpažinimo variklio paleidimas atskirame procese.
 
-Naudojama ir kūrimo režimu (python run_homr.py ...), ir exe režimu (NatuSkeneris.exe --homr ...).
+Naudojama ir kūrimo režimu (python run_homr.py ...), ir exe režimu (Penkline.exe --homr ...).
 Variklio išvestis rašoma į žurnalo failą (--log), nes exe be konsolės neturi stdout.
 """
 

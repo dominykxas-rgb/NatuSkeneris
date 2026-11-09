@@ -1,14 +1,11 @@
-"""Natų skeneris: nuotraukas ir PDF paverčia elektroninėmis natomis.
+"""Penklinė: natų nuotraukas ir PDF paverčia MusicXML failais.
 
 Programa paleidžia mažą serverį tik šiame kompiuteryje (127.0.0.1) ir atidaro jo
-langą per Microsoft Edge (programos režimu). Atpažinimą atlieka homr, peržiūrą
-Verovio, o .mscz / PDF failus sukuria MuseScore.
+langą per Microsoft Edge (programos režimu). Atpažinimą atlieka homr, peržiūrą Verovio.
 """
 
 from __future__ import annotations
 
-import base64
-import glob
 import json
 import os
 import re
@@ -27,18 +24,17 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 
 from photo_prep import IMAGE_EXTS, prepare_image
 
-FROZEN = getattr(sys, "frozen", False)  # paleista kaip NatuSkeneris.exe
+FROZEN = getattr(sys, "frozen", False)  # paleista kaip Penkline.exe
 if FROZEN:
     APP_DIR = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
-    ROOT_DIR = Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "NatuSkeneris"
+    ROOT_DIR = Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "Penkline"
 else:
     APP_DIR = Path(__file__).resolve().parent
     ROOT_DIR = APP_DIR.parent
 ROOT_DIR.mkdir(parents=True, exist_ok=True)
 WEB_DIR = APP_DIR / "web"
 WORK_DIR = ROOT_DIR / "darbai"
-SETTINGS_FILE = ROOT_DIR / "nustatymai.json"
-OUTPUT_DIR = Path.home() / "Documents" / "NatuSkeneris"
+OUTPUT_DIR = Path.home() / "Documents" / "Penklinė"
 IS_WINDOWS = os.name == "nt"
 NO_WINDOW = 0x08000000 if IS_WINDOWS else 0  # CREATE_NO_WINDOW
 
@@ -47,39 +43,6 @@ LAST_PING = time.time()
 # Slaptas raktas: tik mūsų langas jį žino, todėl kitos svetainės negali kreiptis į API.
 TOKEN = uuid.uuid4().hex
 PORT = 0
-
-
-# ---------------------------------------------------------------- nustatymai
-
-
-def load_settings() -> dict:
-    try:
-        return json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-
-
-def save_settings(data: dict) -> None:
-    SETTINGS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def find_musescore() -> str | None:
-    custom = load_settings().get("musescore_path")
-    if custom and Path(custom).is_file():
-        return custom
-    candidates: list[str] = []
-    if IS_WINDOWS:
-        for base in filter(None, [os.environ.get("ProgramFiles"),
-                                  os.environ.get("ProgramFiles(x86)"),
-                                  os.environ.get("LOCALAPPDATA") and
-                                  os.path.join(os.environ["LOCALAPPDATA"], "Programs")]):
-            candidates += sorted(glob.glob(os.path.join(base, "MuseScore*", "bin", "MuseScore*.exe")),
-                                 reverse=True)
-    for name in ("MuseScore4", "mscore4portable", "mscore", "musescore", "MuseScore"):
-        found = shutil.which(name)
-        if found:
-            candidates.append(found)
-    return candidates[0] if candidates else None
 
 
 def engine_ready() -> bool:
@@ -142,17 +105,24 @@ def log(job: dict, text: str) -> None:
     job["log"] = job["log"][-200:]
 
 
-def friendly_progress(line: str) -> str | None:
+def update_progress(job: dict, line: str) -> None:
     low = line.lower()
     if "downloading" in low:
-        return "Parsisiunčiami atpažinimo modeliai (tik pirmą kartą)…"
-    if "processing" in low or "=====" in line:
-        return "Atpažįstamas puslapis…"
-    if "finished" in low:
-        return "Puslapis atpažintas."
-    if "merging" in low:
-        return "Puslapiai sujungiami…"
-    return None
+        job["stage"] = "Siunčiami atpažinimo modeliai"
+    elif line.startswith("====="):
+        job["page"] = job.get("page", 0) + 1
+        total = job.get("pages")
+        job["stage"] = (f"Atpažįstamas {job['page']} puslapis iš {total}" if total
+                        else f"Atpažįstamas {job['page']} puslapis")
+
+
+def pdf_page_count(path: Path) -> int:
+    try:
+        import pypdfium2
+
+        return len(pypdfium2.PdfDocument(str(path)))
+    except Exception:
+        return 0
 
 
 def run_job(job_id: str, files: list[str], flatten: bool) -> None:
@@ -161,28 +131,31 @@ def run_job(job_id: str, files: list[str], flatten: bool) -> None:
     try:
         if not engine_ready():
             raise RuntimeError("Atpažinimo variklis neįdiegtas. Paleisk Idiegti.bat iš naujo.")
-        job["stage"] = "Ruošiamos nuotraukos…"
+        job["stage"] = "Ruošiami lapai"
         inputs: list[str] = []
+        pages = 0
         for name in files:
             src = job_dir / "ikelta" / name
             if src.suffix.lower() == ".pdf":
                 dst = job_dir / src.name
                 shutil.copy(src, dst)
                 inputs.append(str(dst))
+                pages += pdf_page_count(dst)
             elif src.suffix.lower() in IMAGE_EXTS:
                 out, note = prepare_image(src, job_dir, flatten=flatten)
                 if note:
                     log(job, f"{src.name}: {note}")
                 inputs.append(str(out))
+                pages += 1
             else:
-                raise RuntimeError(f"Nepalaikomas failo tipas: {src.name}")
+                raise RuntimeError(f"{src.name}: tokio failo tipo atidaryti negalima.")
 
-        job["stage"] = "Atpažįstamos natos… (gali užtrukti kelias minutes)"
+        job["pages"] = pages or None
+        job["stage"] = "Atpažįstamos natos"
+
         def on_line(line: str) -> None:
             log(job, line)
-            nice = friendly_progress(line)
-            if nice:
-                job["stage"] = nice
+            update_progress(job, line)
 
         code = run_homr_process(inputs, job_dir, on_line=on_line,
                                 should_stop=lambda: job.get("cancelled", False),
@@ -191,8 +164,8 @@ def run_job(job_id: str, files: list[str], flatten: bool) -> None:
             raise RuntimeError("Atšaukta.")
         results = sorted(job_dir.glob("*.musicxml"), key=lambda p: p.stat().st_mtime)
         if code != 0 or not results:
-            raise RuntimeError("Natų atpažinti nepavyko. Pabandyk ryškesnę, tiesiau "
-                               "nufotografuotą nuotrauką.")
+            raise RuntimeError("Natų atpažinti nepavyko. Nufotografuok lapą tiesiai iš viršaus, "
+                               "prie gero apšvietimo, ir bandyk dar kartą.")
         musicxml = results[-1]
 
         # Gražus pavadinimas pagal pirmą failą.
@@ -206,18 +179,7 @@ def run_job(job_id: str, files: list[str], flatten: bool) -> None:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         saved = unique_path(OUTPUT_DIR / f"{base}.musicxml")
         shutil.copy(final, saved)
-        job["saved"] = [str(saved)]
-
-        if find_musescore():
-            job["stage"] = "Kuriamas MuseScore failas…"
-            try:
-                mscz = convert(job, "mscz")
-                saved_mscz = unique_path(OUTPUT_DIR / f"{base}.mscz")
-                shutil.copy(mscz, saved_mscz)
-                job["saved"].append(str(saved_mscz))
-            except Exception as exc:
-                log(job, f"MuseScore konvertavimas nepavyko: {exc}")
-
+        job["saved"] = str(saved)
         job["stage"] = "Baigta"
         job["status"] = "done"
     except Exception as exc:
@@ -237,22 +199,6 @@ def unique_path(path: Path) -> Path:
         i += 1
 
 
-def convert(job: dict, fmt: str) -> Path:
-    """Konvertuoja MusicXML į mscz / pdf / mid per MuseScore."""
-    src = Path(job["musicxml"])
-    out = src.with_suffix("." + fmt)
-    if out.exists() and out.stat().st_mtime >= src.stat().st_mtime:
-        return out
-    exe = find_musescore()
-    if not exe:
-        raise RuntimeError("MuseScore nerastas. Įsidiek MuseScore 4 iš musescore.org.")
-    res = subprocess.run([exe, "-o", str(out), str(src)], capture_output=True, text=True,
-                         timeout=180, creationflags=NO_WINDOW)
-    if not out.exists():
-        raise RuntimeError("MuseScore nesukūrė failo. " + (res.stderr or "")[-300:])
-    return out
-
-
 def preview(job: dict) -> dict:
     import verovio
 
@@ -268,38 +214,33 @@ def preview(job: dict) -> dict:
     return {"pages": pages, "midi": midi}
 
 
-def open_in_musescore(job: dict) -> None:
-    exe = find_musescore()
-    if not exe:
-        raise RuntimeError("MuseScore nerastas.")
-    existing = [p for p in job.get("saved", []) if p.endswith(".mscz")]
-    if existing:
-        target = Path(existing[0])
-    else:
-        try:
-            target = unique_path(OUTPUT_DIR / f"{job['name']}.mscz")
-            shutil.copy(convert(job, "mscz"), target)
-            job.setdefault("saved", []).append(str(target))
-        except Exception:
-            target = Path(job["saved"][0])  # MusicXML MuseScore atsidarys ir pats
-    subprocess.Popen([exe, str(target)])
-
-
-def open_folder(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
+def open_file(path: Path) -> None:
+    """Atidaro failą programa, kuri sistemoje priskirta tokiems failams."""
     if IS_WINDOWS:
-        os.startfile(str(path))  # type: ignore[attr-defined]
+        try:
+            os.startfile(str(path))  # type: ignore[attr-defined]
+        except OSError as exc:
+            raise RuntimeError("Kompiuteryje nėra programos, kuri atidarytų MusicXML failus.") from exc
     elif sys.platform == "darwin":
         subprocess.Popen(["open", str(path)])
     else:
         subprocess.Popen(["xdg-open", str(path)])
 
 
+def show_in_folder(path: Path) -> None:
+    if IS_WINDOWS and path.is_file():
+        subprocess.Popen(["explorer", "/select,", str(path)])
+        return
+    folder = path if path.is_dir() else path.parent
+    folder.mkdir(parents=True, exist_ok=True)
+    open_file(folder)
+
+
 # ---------------------------------------------------------------- serveris
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "NatuSkeneris/1.0"
+    server_version = "Penkline/1.1"
 
     def log_message(self, *args) -> None:  # tylus režimas
         pass
@@ -352,32 +293,23 @@ class Handler(BaseHTTPRequestHandler):
             if not parts:
                 return self.send_file(WEB_DIR / "index.html", "text/html; charset=utf-8")
             if parts == ["api", "status"]:
-                ms = find_musescore()
-                return self.send_json({"musescore": ms, "engine": engine_ready(),
-                                       "output_dir": str(OUTPUT_DIR)})
+                return self.send_json({"engine": engine_ready(), "output_dir": str(OUTPUT_DIR)})
             if len(parts) == 3 and parts[:2] == ["api", "job"]:
                 job = self.job(parts[2])
                 if not job:
                     return self.send_json({"error": "nėra"}, 404)
                 return self.send_json({k: job.get(k) for k in
-                                       ("status", "stage", "error", "saved", "name")} |
+                                       ("status", "stage", "error", "saved", "name", "page",
+                                        "pages")} |
                                       {"log": job["log"][-15:]})
             if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "preview":
                 job = self.job(parts[2])
                 return self.send_json(preview(job))
             if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "download":
                 job = self.job(parts[2])
-                fmt = parse_qs(url.query).get("fmt", ["musicxml"])[0]
-                if fmt == "musicxml":
-                    path = Path(job["musicxml"])
-                elif fmt in ("mscz", "pdf", "mid"):
-                    path = convert(job, fmt)
-                else:
-                    return self.send_json({"error": "blogas formatas"}, 400)
-                ctype = {"musicxml": "application/vnd.recordare.musicxml+xml",
-                         "mscz": "application/octet-stream", "pdf": "application/pdf",
-                         "mid": "audio/midi"}[fmt]
-                return self.send_file(path, ctype, f"{job['name']}.{fmt}")
+                return self.send_file(Path(job["musicxml"]),
+                                      "application/vnd.recordare.musicxml+xml",
+                                      f"{job['name']}.musicxml")
             self.send_json({"error": "nerasta"}, 404)
         except Exception as exc:
             self.send_json({"error": str(exc)}, 500)
@@ -419,21 +351,15 @@ class Handler(BaseHTTPRequestHandler):
                 if job.get("proc"):
                     job["proc"].kill()
                 return self.send_json({"ok": True})
-            if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "musescore":
-                open_in_musescore(self.job(parts[2]))
+            if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "open":
+                open_file(Path(self.job(parts[2])["saved"]))
+                return self.send_json({"ok": True})
+            if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "reveal":
+                show_in_folder(Path(self.job(parts[2])["saved"]))
                 return self.send_json({"ok": True})
             if parts == ["api", "open-folder"]:
-                open_folder(OUTPUT_DIR)
+                show_in_folder(OUTPUT_DIR)
                 return self.send_json({"ok": True})
-            if parts == ["api", "settings"]:
-                body = self.read_json()
-                settings = load_settings()
-                path = (body.get("musescore_path") or "").strip().strip('"')
-                if path and not Path(path).is_file():
-                    return self.send_json({"error": "Toks failas nerastas."}, 400)
-                settings["musescore_path"] = path
-                save_settings(settings)
-                return self.send_json({"musescore": find_musescore()})
             self.send_json({"error": "nerasta"}, 404)
         except Exception as exc:
             self.send_json({"error": str(exc)}, 500)
@@ -516,7 +442,7 @@ def main() -> None:
     PORT = free_port()
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     url = f"http://127.0.0.1:{PORT}/#t={TOKEN}"
-    print("Natų skeneris veikia:", url)
+    print("Penklinė veikia:", url)
     LAST_PING = time.time() + 60  # laikas langui atsidaryti
     threading.Thread(target=watchdog, args=(server,), daemon=True).start()
     if "--no-window" not in sys.argv:

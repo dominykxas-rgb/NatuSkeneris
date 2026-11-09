@@ -59,13 +59,13 @@ jobs:
         run: python app/run_homr.py --no-title test/variklis/chula.png
 
       - name: Exe kūrimas
-        run: pyinstaller NatuSkeneris.spec --noconfirm
+        run: pyinstaller Penkline.spec --noconfirm
 
       - name: Exe patikra su tikromis natomis
         timeout-minutes: 15
         shell: pwsh
         run: |
-          $exe = "dist\NatuSkeneris\NatuSkeneris.exe"
+          $exe = "dist\Penkline\Penkline.exe"
           $out = "test\out-exe"
           $p = Start-Process $exe -ArgumentList "--selftest", "test\chula.png", $out -PassThru
           $null = $p.Handle  # be to PowerShell neparodo išėjimo kodo
@@ -80,11 +80,11 @@ jobs:
           $hung = -not $p.HasExited
           if ($hung) {
             Write-Host "::error::Exe užstrigo (10 min)"
-            Get-Process NatuSkeneris -ErrorAction SilentlyContinue | Format-Table Id, CPU, WS -AutoSize
-            Get-Process NatuSkeneris -ErrorAction SilentlyContinue | Stop-Process -Force
+            Get-Process Penkline -ErrorAction SilentlyContinue | Format-Table Id, CPU, WS -AutoSize
+            Get-Process Penkline -ErrorAction SilentlyContinue | Stop-Process -Force
           }
           $logs = @(Get-ChildItem $out -Filter *.log -ErrorAction SilentlyContinue) +
-                  @(Get-ChildItem "$env:LOCALAPPDATA\NatuSkeneris" -Filter *.log -ErrorAction SilentlyContinue)
+                  @(Get-ChildItem "$env:LOCALAPPDATA\Penkline" -Filter *.log -ErrorAction SilentlyContinue)
           foreach ($f in $logs) {
             Write-Host "----- $($f.FullName) -----"
             Get-Content $f.FullName
@@ -103,9 +103,9 @@ jobs:
       - name: Supakavimas
         shell: pwsh
         run: |
-          Copy-Item SKAITYK.md dist\NatuSkeneris\
-          Copy-Item engine\homr-LICENSE.txt dist\NatuSkeneris\
-          Compress-Archive dist\NatuSkeneris NatuSkeneris-Windows.zip
+          Copy-Item SKAITYK.md dist\Penkline\
+          Copy-Item engine\homr-LICENSE.txt dist\Penkline\
+          Compress-Archive dist\Penkline Penkline-Windows.zip
 
       - name: Išleidimas (Releases → naujausia)
         shell: pwsh
@@ -114,7 +114,7 @@ jobs:
         run: |
           gh release delete naujausia --yes --cleanup-tag 2>$null
           $global:LASTEXITCODE = 0
-          gh release create naujausia NatuSkeneris-Windows.zip `
-            --title "Natų skeneris (naujausia Windows versija)" `
-            --notes "Išarchyvuok ir paleisk NatuSkeneris.exe. Commit: ${{ github.sha }}" `
+          gh release create naujausia Penkline-Windows.zip `
+            --title "Penklinė (Windows)" `
+            --notes "Išarchyvuok ir paleisk Penkline.exe. Commit: ${{ github.sha }}" `
             --target ${{ github.sha }}

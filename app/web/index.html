@@ -3,180 +3,258 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Natų skeneris</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='10' cy='24' r='5' fill='%232f3e9e'/%3E%3Cpath d='M14 24V4l12 4v6l-10-3' fill='none' stroke='%232f3e9e' stroke-width='3'/%3E%3C/svg%3E">
+<title>Penklinė</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232b44c4'/%3E%3Cg stroke='%23fff' stroke-width='1.6'%3E%3Cpath d='M5 9h22M5 13h22M5 17h22M5 21h22M5 25h22'/%3E%3C/g%3E%3Cellipse cx='14' cy='19' rx='3.4' ry='2.5' fill='%23fff' transform='rotate(-20 14 19)'/%3E%3Cpath d='M17 18.2V6' stroke='%23fff' stroke-width='1.8'/%3E%3C/svg%3E">
 <style>
   :root {
-    --paper: #f7f4ee; --card: #ffffff; --ink: #1d1f27; --muted: #6b6f7d;
-    --line: #e3ded3; --accent: #2f3e9e; --accent-ink: #ffffff; --accent-soft: #e8eafb;
-    --warn: #8a5a00; --warn-bg: #fff4dc; --err: #a32020; --err-bg: #fde8e8; --ok: #1e7b45;
+    --bg: #eceef1;
+    --surface: #ffffff;
+    --ink: #1b1e24;
+    --soft: #5d636e;
+    --line: #c6cad2;
+    --accent: #2b44c4;
+    --on-accent: #ffffff;
+    --danger: #b3261e;
+    --wordmark: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    --text: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --paper: #16171c; --card: #1f2128; --ink: #ecedf2; --muted: #9a9eac;
-      --line: #30333d; --accent: #8c99ff; --accent-ink: #12131a; --accent-soft: #262a45;
-      --warn: #f2c46b; --warn-bg: #3a2f17; --err: #ff8a8a; --err-bg: #3d1d1d; --ok: #6fd39b;
+      --bg: #16181c;
+      --surface: #1f2228;
+      --ink: #e8eaee;
+      --soft: #9aa0ab;
+      --line: #3b3f48;
+      --accent: #8fa0ff;
+      --on-accent: #10132a;
+      --danger: #ff8c82;
+      color-scheme: dark;
     }
   }
+
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--paper); color: var(--ink);
-         font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
-  header { display: flex; align-items: center; gap: 12px; padding: 18px 28px;
-           border-bottom: 1px solid var(--line); }
-  header h1 { font-size: 20px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
-  header .sub { color: var(--muted); font-size: 13px; }
-  header .spacer { flex: 1; }
-  main { max-width: 1000px; margin: 0 auto; padding: 24px 28px 60px; }
-  .banner { border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
-  .banner.warn { background: var(--warn-bg); color: var(--warn); }
-  .banner.err { background: var(--err-bg); color: var(--err); }
-  .banner a { color: inherit; font-weight: 600; }
-  .banner .row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-  .banner input { flex: 1; min-width: 240px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-          padding: 22px; margin-bottom: 18px; }
-  .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 38px 20px;
-          text-align: center; cursor: pointer; transition: .15s; }
-  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
-  .drop strong { display: block; font-size: 17px; margin-bottom: 4px; }
-  .drop span { color: var(--muted); font-size: 13px; }
-  .files { list-style: none; padding: 0; margin: 16px 0 0; display: grid;
-           grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-  .files li { border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
-              background: var(--paper); position: relative; }
-  .files .thumb { height: 150px; display: flex; align-items: center; justify-content: center;
-                  background: #fff; overflow: hidden; }
-  .files .thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .files .thumb .pdf { font-weight: 700; color: var(--accent); font-size: 22px; }
-  .files .meta { padding: 6px 8px; font-size: 12px; display: flex; gap: 4px; align-items: center; }
-  .files .meta .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .files .num { position: absolute; top: 6px; left: 6px; background: var(--accent);
-                color: var(--accent-ink); border-radius: 99px; font-size: 12px; font-weight: 700;
-                width: 22px; height: 22px; display: grid; place-items: center; }
-  .icon-btn { border: none; background: none; color: var(--muted); cursor: pointer;
-              font-size: 14px; padding: 2px 4px; border-radius: 4px; }
-  .icon-btn:hover { background: var(--line); color: var(--ink); }
-  .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
-  button.btn, a.btn { font: inherit; border-radius: 9px; padding: 9px 16px; cursor: pointer;
-           border: 1px solid var(--line); background: var(--card); color: var(--ink);
-           text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-  button.btn:hover, a.btn:hover { border-color: var(--accent); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
-                 font-weight: 600; }
-  .btn:disabled { opacity: .45; cursor: default; }
-  label.check { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; }
-  input[type=text] { font: inherit; padding: 8px 10px; border-radius: 8px;
-                     border: 1px solid var(--line); background: var(--card); color: var(--ink); }
-  .progress { display: flex; align-items: center; gap: 14px; }
-  .spinner { width: 22px; height: 22px; border: 3px solid var(--line);
-             border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .stage { font-weight: 600; }
-  .hint { color: var(--muted); font-size: 13px; }
-  details { margin-top: 12px; }
-  details pre { font-size: 11px; max-height: 200px; overflow: auto; background: var(--paper);
-                padding: 10px; border-radius: 8px; white-space: pre-wrap; }
-  .result-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .result-head h2 { margin: 0; font-size: 18px; flex: 1; }
-  .ok { color: var(--ok); font-weight: 600; }
-  .pages { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
-  .page { background: #fff; border-radius: 8px; border: 1px solid var(--line); padding: 10px; }
-  .page svg { width: 100%; height: auto; display: block; }
-  midi-player { width: 100%; margin-top: 14px; }
-  .saved { font-size: 13px; color: var(--muted); margin-top: 10px; word-break: break-all; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 var(--text);
+    display: flex; flex-direction: column;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .hidden { display: none !important; }
-  .tips { color: var(--muted); font-size: 13px; margin: 14px 0 0; padding-left: 18px; }
+
+  /* Viršus */
+  header {
+    display: flex; align-items: baseline; gap: 16px;
+    width: 100%; max-width: 1080px; margin: 0 auto; padding: 20px 32px 0;
+  }
+  .wordmark {
+    font-family: var(--wordmark); font-weight: 600; font-stretch: semi-condensed;
+    font-size: 26px; letter-spacing: -0.01em; margin: 0;
+  }
+  header .spacer { flex: 1; }
+
+  .link {
+    background: none; border: 0; padding: 4px 0; cursor: pointer;
+    color: var(--soft); text-decoration: underline; text-underline-offset: 3px;
+    text-decoration-color: var(--line);
+  }
+  .link:hover { color: var(--ink); text-decoration-color: currentColor; }
+
+  main { flex: 1; width: 100%; max-width: 1080px; margin: 0 auto; padding: 24px 32px 48px; }
+
+  /* Penklinė */
+  .staff {
+    position: relative; min-height: 340px; border-radius: 6px;
+    background:
+      repeating-linear-gradient(to bottom,
+        transparent 0, transparent 31px, var(--line) 31px, var(--line) 32px)
+      0 50% / 100% 160px no-repeat,
+      var(--surface);
+    transition: background-color .15s;
+  }
+  .staff.over { background-color: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .staff.over { --line: var(--accent); }
+
+  /* Eiga: penklinės linijos nusidažo iš kairės */
+  .staff.progress::after {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p, 0%);
+    border-radius: 6px 0 0 6px; pointer-events: none;
+    background: repeating-linear-gradient(to bottom,
+        transparent 0, transparent 30px, var(--accent) 30px, var(--accent) 32px)
+      0 50% / 100% 160px no-repeat;
+    transition: width .8s ease-out;
+  }
+  .staff.progress.indet::after { width: 28%; animation: sweep 2.2s ease-in-out infinite; }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(360%); } }
+  .staff.progress { overflow: hidden; }
+
+  .empty {
+    position: absolute; inset: 0; display: grid; place-content: center; justify-items: center;
+    gap: 14px; text-align: center; padding: 24px;
+  }
+  .empty p {
+    margin: 0; font-family: var(--wordmark); font-stretch: semi-condensed;
+    font-size: 22px; background: var(--surface); padding: 0 14px;
+  }
+
+  .btn {
+    border: 1px solid var(--line); background: var(--surface); border-radius: 6px;
+    padding: 8px 16px; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--soft); }
+  .btn.primary {
+    background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600;
+  }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn:disabled { opacity: .4; cursor: default; filter: none; }
+
+  /* Lapai ant penklinės */
+  .sheets {
+    list-style: none; margin: 0; padding: 36px 28px; min-height: 340px;
+    display: flex; gap: 22px; align-items: center; overflow-x: auto;
+  }
+  .sheet { flex: 0 0 auto; width: 150px; text-align: center; }
+  .sheet .paper {
+    position: relative; height: 200px; background: #fff; border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(20, 24, 40, .18), 0 6px 18px -8px rgba(20, 24, 40, .35);
+    overflow: hidden; display: grid; place-items: center;
+  }
+  .sheet img { width: 100%; height: 100%; object-fit: cover; }
+  .sheet .pdf { font-family: var(--wordmark); font-size: 20px; color: #2b44c4; }
+  .sheet .nr {
+    position: absolute; left: 6px; bottom: 6px; min-width: 22px; height: 22px; padding: 0 6px;
+    border-radius: 11px; background: var(--accent); color: var(--on-accent);
+    font-size: 12px; font-weight: 700; display: grid; place-items: center;
+  }
+  .sheet .tools {
+    position: absolute; top: 4px; right: 4px; display: flex; gap: 2px; opacity: 0;
+    transition: opacity .12s;
+  }
+  .sheet:hover .tools, .sheet:focus-within .tools { opacity: 1; }
+  .sheet .tools button {
+    width: 26px; height: 26px; border: 0; border-radius: 4px; cursor: pointer;
+    background: rgba(27, 30, 36, .78); color: #fff; font-size: 14px; line-height: 1;
+  }
+  .sheet .tools button:hover { background: rgba(27, 30, 36, .95); }
+  .sheet .name {
+    margin-top: 8px; font-size: 13px; color: var(--soft);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .add {
+    flex: 0 0 auto; width: 110px; height: 200px; border: 1px dashed var(--line); border-radius: 3px;
+    background: transparent; color: var(--soft); cursor: pointer; font-size: 28px;
+  }
+  .add:hover { border-color: var(--soft); color: var(--ink); }
+
+  .bar { display: flex; align-items: center; gap: 16px; margin-top: 18px; flex-wrap: wrap; }
+  .bar .count { color: var(--soft); }
+  .bar .spacer { flex: 1; }
+
+  /* Darbas */
+  .work .stage {
+    position: absolute; top: 34px; left: 0; right: 0; text-align: center;
+    font-family: var(--wordmark); font-stretch: semi-condensed; font-size: 22px;
+  }
+  .work .link { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); }
+
+  /* Klaida */
+  .error { padding: 40px 32px; }
+  .error h2 { margin: 0 0 6px; font-family: var(--wordmark); font-stretch: semi-condensed; font-size: 22px; color: var(--danger); }
+  .error p { margin: 0 0 18px; max-width: 60ch; }
+  details summary { cursor: pointer; color: var(--soft); font-size: 13px; }
+  details pre {
+    font: 12px/1.45 Consolas, monospace; white-space: pre-wrap; max-height: 260px; overflow: auto;
+    background: var(--bg); padding: 12px; border-radius: 4px;
+  }
+
+  /* Rezultatas */
+  .result-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .result-head h2 {
+    margin: 0; flex: 1; min-width: 200px; font-family: var(--wordmark); font-weight: 600;
+    font-stretch: semi-condensed; font-size: 24px; overflow-wrap: anywhere;
+  }
+  .saved-at { color: var(--soft); font-size: 13px; margin: -10px 0 18px; overflow-wrap: anywhere; }
+  .score { display: flex; flex-direction: column; gap: 16px; }
+  .score .page { background: #fff; border-radius: 4px; padding: 12px; box-shadow: 0 1px 2px rgba(20, 24, 40, .15); }
+  .score svg { display: block; width: 100%; height: auto; }
+  midi-player { display: block; width: 100%; margin-bottom: 16px; }
+  .muted { color: var(--soft); }
+
+  @media (max-width: 640px) {
+    header { padding: 14px 16px 0; }
+    main { padding: 16px 16px 32px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><circle cx="10" cy="24" r="5" fill="currentColor" style="color:var(--accent)"/><path d="M14 24V4l12 4v6l-10-3" fill="none" stroke="currentColor" style="color:var(--accent)" stroke-width="3"/></svg>
-  <div>
-    <h1>Natų skeneris</h1>
-    <div class="sub">Nuotrauka ar PDF → elektroninės natos MuseScore</div>
-  </div>
-  <div class="spacer"></div>
-  <button class="btn" id="openFolder">Rezultatų aplankas</button>
+  <h1 class="wordmark">Penklinė</h1>
+  <span class="spacer"></span>
+  <button class="link" id="openFolder">Rezultatų aplankas</button>
 </header>
 
 <main>
-  <div id="engineBanner" class="banner err hidden">
-    Atpažinimo variklis neįdiegtas. Paleisk failą <b>Idiegti.bat</b> iš naujo.
-  </div>
-  <div id="msBanner" class="banner warn hidden">
-    MuseScore nerastas, todėl natos bus išsaugotos tik kaip MusicXML.
-    Atsisiųsk nemokamą <a href="https://musescore.org/download" target="_blank">MuseScore 4</a>,
-    įsidiek ir paleisk šią programėlę iš naujo. Jei jau įdiegtas kitoje vietoje, nurodyk kelią iki MuseScore4.exe:
-    <div class="row">
-      <input type="text" id="msPath" placeholder="C:\Program Files\MuseScore 4\bin\MuseScore4.exe">
-      <button class="btn" id="msSave">Išsaugoti</button>
-    </div>
-  </div>
-
-  <!-- 1. Failų pasirinkimas -->
-  <section class="card" id="pickCard">
-    <div class="drop" id="drop">
-      <strong>Įmesk natų nuotraukas ar PDF čia</strong>
-      <span>arba spausk ir pasirink. Keli puslapiai bus sujungti į vieną kūrinį pagal eilę.</span>
-    </div>
-    <input type="file" id="fileInput" multiple accept="image/*,.pdf" class="hidden">
-    <ul class="files" id="fileList"></ul>
-    <div class="actions">
-      <button class="btn primary" id="startBtn" disabled>Atpažinti natas</button>
-      <label class="check"><input type="checkbox" id="flatten" checked> Ištiesinti nuotraukas (rasti lapą ir pataisyti kampą)</label>
-    </div>
-    <ul class="tips">
-      <li>Fotografuok tiesiai iš viršaus, gerai apšviestą lapą, be šešėlių.</li>
-      <li>Geriausiai atpažįstamos spausdintos natos. Ranka rašytų natų atpažinimas silpnas.</li>
-    </ul>
-  </section>
-
-  <!-- 2. Eiga -->
-  <section class="card hidden" id="progressCard">
-    <div class="progress">
-      <div class="spinner"></div>
-      <div style="flex:1">
-        <div class="stage" id="stage">Pradedama…</div>
-        <div class="hint">Pirmą kartą parsisiunčiami modeliai, todėl gali užtrukti ilgiau.</div>
+  <!-- Lapų pasirinkimas -->
+  <section id="pick">
+    <div class="staff" id="drop">
+      <div class="empty" id="empty">
+        <p>Įmesk natų nuotraukas arba PDF</p>
+        <button class="btn" id="choose">Pasirinkti failus</button>
       </div>
-      <button class="btn" id="cancelBtn">Atšaukti</button>
+      <ul class="sheets hidden" id="sheets"></ul>
     </div>
-    <details><summary class="hint">Išsami informacija</summary><pre id="log"></pre></details>
+    <div class="bar">
+      <span class="count" id="count"></span>
+      <span class="spacer"></span>
+      <button class="btn primary" id="start" disabled>Atpažinti</button>
+    </div>
+    <input type="file" id="fileInput" multiple accept="image/*,.heic,.heif,.pdf" class="hidden">
   </section>
 
-  <!-- 3. Klaida -->
-  <section class="card hidden" id="errorCard">
-    <div class="banner err" id="errorText" style="margin:0"></div>
-    <details><summary class="hint">Išsami informacija</summary><pre id="errLog"></pre></details>
-    <div class="actions"><button class="btn" id="retryBtn">Bandyti dar kartą</button></div>
+  <!-- Atpažinimas -->
+  <section id="work" class="hidden">
+    <div class="staff progress indet work" id="meter">
+      <div class="stage" id="stage" role="status">Ruošiami lapai</div>
+      <button class="link" id="cancel">Atšaukti</button>
+    </div>
   </section>
 
-  <!-- 4. Rezultatas -->
-  <section class="card hidden" id="resultCard">
+  <!-- Klaida -->
+  <section id="fail" class="hidden">
+    <div class="staff error">
+      <h2>Nepavyko</h2>
+      <p id="errorText"></p>
+      <button class="btn" id="retry">Grįžti</button>
+      <details style="margin-top:22px"><summary>Žurnalas</summary><pre id="errLog"></pre></details>
+    </div>
+  </section>
+
+  <!-- Rezultatas -->
+  <section id="done" class="hidden">
     <div class="result-head">
-      <h2 id="resultTitle">Natos atpažintos</h2>
-      <span class="ok">✓ Išsaugota</span>
+      <h2 id="title"></h2>
+      <button class="btn primary" id="open">Atidaryti</button>
+      <button class="btn" id="reveal">Rodyti aplanke</button>
+      <a class="btn" id="saveAs" style="text-decoration:none;color:inherit">Išsaugoti kitur</a>
+      <button class="btn" id="again">Nauji lapai</button>
     </div>
-    <div class="actions">
-      <button class="btn primary" id="msOpen">Atidaryti ir taisyti MuseScore</button>
-      <a class="btn" id="dlXml">MusicXML</a>
-      <a class="btn ms-only" id="dlMscz">.mscz</a>
-      <a class="btn ms-only" id="dlPdf">PDF</a>
-      <button class="btn" id="newBtn">Naujos natos</button>
-    </div>
-    <div class="saved" id="savedList"></div>
-    <div class="hint" style="margin-top:12px">Peržiūra (patikrink, ar natos atpažintos teisingai; klaidas taisyk MuseScore):</div>
-    <div id="playerBox"></div>
-    <div class="pages" id="pages"></div>
+    <p class="saved-at" id="savedAt"></p>
+    <div id="player"></div>
+    <div class="score" id="score"></div>
   </section>
 </main>
 
 <script>
 const TOKEN = new URLSearchParams(location.hash.slice(1)).get('t') || '';
 const $ = id => document.getElementById(id);
-let files = [];          // {file, url}
+let files = [];
 let jobId = null;
-let status = {};
+let engineOk = true;
 
 async function api(path, opts = {}) {
   opts.headers = Object.assign({'X-Token': TOKEN}, opts.headers || {});
@@ -185,69 +263,91 @@ async function api(path, opts = {}) {
   if (!r.ok) throw new Error(data.error || ('Klaida ' + r.status));
   return data;
 }
-const post = (path, body) => api(path, {method: 'POST', headers: {'Content-Type': 'application/json'},
-                                         body: JSON.stringify(body || {})});
+const post = (path, body) => api(path, {
+  method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body || {})
+});
 function show(id) {
-  for (const c of ['pickCard', 'progressCard', 'errorCard', 'resultCard']) $(c).classList.toggle('hidden', c !== id);
+  for (const s of ['pick', 'work', 'fail', 'done']) $(s).classList.toggle('hidden', s !== id);
+}
+function fail(msg, log) {
+  $('errorText').textContent = msg;
+  $('errLog').textContent = log || '';
+  $('errLog').parentElement.classList.toggle('hidden', !log);
+  show('fail');
 }
 
-// --- būsena
-async function loadStatus() {
-  status = await api('/api/status');
-  $('engineBanner').classList.toggle('hidden', status.engine);
-  $('msBanner').classList.toggle('hidden', !!status.musescore);
-  document.querySelectorAll('.ms-only').forEach(e => e.classList.toggle('hidden', !status.musescore));
-  $('msOpen').classList.toggle('hidden', !status.musescore);
-}
-$('msSave').onclick = async () => {
-  try { await post('/api/settings', {musescore_path: $('msPath').value}); await loadStatus(); }
-  catch (e) { alert(e.message); }
-};
-$('openFolder').onclick = () => post('/api/open-folder');
 setInterval(() => post('/api/ping').catch(() => {}), 10000);
 post('/api/ping').catch(() => {});
+$('openFolder').onclick = () => post('/api/open-folder').catch(e => alert(e.message));
 
-// --- failai
-function renderFiles() {
-  const ul = $('fileList'); ul.innerHTML = '';
+// Lapai
+const lapu = n => n === 1 ? 'lapas' : (n % 10 === 0 || (n % 100 > 10 && n % 100 < 20)) ? 'lapų' : 'lapai';
+
+function render() {
+  const ul = $('sheets');
+  ul.innerHTML = '';
   files.forEach((f, i) => {
     const li = document.createElement('li');
-    const isPdf = f.file.name.toLowerCase().endsWith('.pdf');
-    li.innerHTML = `<div class="num">${i + 1}</div>
-      <div class="thumb">${isPdf ? '<div class="pdf">PDF</div>' : `<img src="${f.url}" alt="">`}</div>
-      <div class="meta"><span class="n" title=""></span>
-        <button class="icon-btn" data-a="up" title="Anksčiau">↑</button>
-        <button class="icon-btn" data-a="down" title="Vėliau">↓</button>
-        <button class="icon-btn" data-a="del" title="Pašalinti">✕</button></div>`;
-    li.querySelector('.n').textContent = f.file.name;
-    li.querySelector('.n').title = f.file.name;
+    li.className = 'sheet';
+    const pdf = /\.pdf$/i.test(f.file.name);
+    li.innerHTML = `
+      <div class="paper">
+        ${pdf ? '<span class="pdf">PDF</span>' : '<img alt="">'}
+        <span class="nr">${i + 1}</span>
+        <div class="tools">
+          <button data-a="left" title="Perkelti į kairę" aria-label="Perkelti į kairę">‹</button>
+          <button data-a="right" title="Perkelti į dešinę" aria-label="Perkelti į dešinę">›</button>
+          <button data-a="del" title="Pašalinti" aria-label="Pašalinti">✕</button>
+        </div>
+      </div>
+      <div class="name"></div>`;
+    if (!pdf) li.querySelector('img').src = f.url;
+    li.querySelector('.name').textContent = f.file.name;
+    li.querySelector('.name').title = f.file.name;
     li.querySelectorAll('button').forEach(b => b.onclick = () => {
       const a = b.dataset.a;
-      if (a === 'del') files.splice(i, 1);
-      if (a === 'up' && i > 0) [files[i - 1], files[i]] = [files[i], files[i - 1]];
-      if (a === 'down' && i < files.length - 1) [files[i + 1], files[i]] = [files[i], files[i + 1]];
-      renderFiles();
+      if (a === 'del') { URL.revokeObjectURL(f.url); files.splice(i, 1); }
+      if (a === 'left' && i > 0) [files[i - 1], files[i]] = [files[i], files[i - 1]];
+      if (a === 'right' && i < files.length - 1) [files[i + 1], files[i]] = [files[i], files[i + 1]];
+      render();
     });
     ul.appendChild(li);
   });
-  $('startBtn').disabled = files.length === 0 || !status.engine;
+  if (files.length) {
+    const add = document.createElement('button');
+    add.className = 'add';
+    add.textContent = '+';
+    add.title = 'Pridėti lapų';
+    add.setAttribute('aria-label', 'Pridėti lapų');
+    add.onclick = () => $('fileInput').click();
+    ul.appendChild(add);
+  }
+  $('sheets').classList.toggle('hidden', !files.length);
+  $('empty').classList.toggle('hidden', !!files.length);
+  $('count').textContent = files.length ? `${files.length} ${lapu(files.length)}` : '';
+  $('start').disabled = !files.length || !engineOk;
 }
 function addFiles(list) {
   for (const file of list) {
-    const ok = /\.(pdf|jpe?g|png|webp|bmp|tiff?|heic|heif)$/i.test(file.name);
-    if (ok) files.push({file, url: URL.createObjectURL(file)});
+    if (/\.(pdf|jpe?g|png|webp|bmp|tiff?|heic|heif)$/i.test(file.name)) {
+      files.push({file, url: URL.createObjectURL(file)});
+    }
   }
-  renderFiles();
+  render();
 }
-$('drop').onclick = () => $('fileInput').click();
+$('choose').onclick = () => $('fileInput').click();
 $('fileInput').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
-$('drop').ondragover = e => { e.preventDefault(); $('drop').classList.add('over'); };
-$('drop').ondragleave = () => $('drop').classList.remove('over');
-$('drop').ondrop = e => { e.preventDefault(); $('drop').classList.remove('over'); addFiles(e.dataTransfer.files); };
+const drop = $('drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', e => { if (!drop.contains(e.relatedTarget)) drop.classList.remove('over'); });
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); });
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => e.preventDefault());
 
-// --- atpažinimas
-$('startBtn').onclick = async () => {
-  show('progressCard'); $('stage').textContent = 'Įkeliami failai…'; $('log').textContent = '';
+// Atpažinimas
+$('start').onclick = async () => {
+  show('work');
+  setStage('Įkeliami lapai', null);
   try {
     jobId = (await post('/api/new')).id;
     const names = [];
@@ -256,59 +356,76 @@ $('startBtn').onclick = async () => {
       await api(`/api/job/${jobId}/upload?name=${encodeURIComponent(safe)}`, {method: 'POST', body: files[i].file});
       names.push(safe);
     }
-    await post(`/api/job/${jobId}/start`, {files: names, flatten: $('flatten').checked});
+    await post(`/api/job/${jobId}/start`, {files: names});
     poll();
-  } catch (e) { fail(e.message, ''); }
+  } catch (e) { fail(e.message); }
 };
+function setStage(text, fraction) {
+  $('stage').textContent = text;
+  const m = $('meter');
+  m.classList.toggle('indet', fraction == null);
+  m.style.setProperty('--p', fraction == null ? '0%' : Math.round(fraction * 100) + '%');
+}
 async function poll() {
   try {
     const j = await api(`/api/job/${jobId}`);
-    $('stage').textContent = j.stage || '…';
-    $('log').textContent = (j.log || []).join('\n');
     if (j.status === 'done') return showResult(j);
     if (j.status === 'error') return fail(j.error, (j.log || []).join('\n'));
-    setTimeout(poll, 1500);
-  } catch (e) { fail(e.message, ''); }
+    const frac = j.pages && j.page ? (j.page - 0.5) / j.pages : null;
+    setStage(j.stage || 'Atpažįstamos natos', frac);
+    setTimeout(poll, 1200);
+  } catch (e) { fail(e.message); }
 }
-function fail(msg, log) { $('errorText').textContent = msg; $('errLog').textContent = log; show('errorCard'); }
-$('cancelBtn').onclick = () => jobId && post(`/api/job/${jobId}/cancel`);
-$('retryBtn').onclick = () => show('pickCard');
-$('newBtn').onclick = () => { files = []; renderFiles(); show('pickCard'); };
+$('cancel').onclick = () => jobId && post(`/api/job/${jobId}/cancel`).catch(() => {});
+$('retry').onclick = () => show('pick');
+$('again').onclick = () => {
+  files.forEach(f => URL.revokeObjectURL(f.url));
+  files = [];
+  render();
+  show('pick');
+};
 
+// Rezultatas
 async function showResult(j) {
-  show('resultCard');
-  $('resultTitle').textContent = j.name || 'Natos atpažintos';
-  const dl = fmt => `/api/job/${jobId}/download?fmt=${fmt}&t=${TOKEN}`;
-  $('dlXml').href = dl('musicxml'); $('dlMscz').href = dl('mscz'); $('dlPdf').href = dl('pdf');
-  $('savedList').textContent = (j.saved && j.saved.length) ? 'Išsaugota: ' + j.saved.join('  ·  ') : '';
-  $('pages').innerHTML = '<div class="hint">Ruošiama peržiūra…</div>';
-  $('playerBox').innerHTML = '';
+  show('done');
+  $('title').textContent = j.name || 'Natos';
+  $('savedAt').textContent = j.saved || '';
+  $('saveAs').href = `/api/job/${jobId}/download?t=${TOKEN}`;
+  $('saveAs').download = (j.name || 'natos') + '.musicxml';
+  $('player').innerHTML = '';
+  $('score').innerHTML = '<p class="muted">Ruošiama peržiūra</p>';
   try {
     const p = await api(`/api/job/${jobId}/preview`);
-    $('pages').innerHTML = '';
+    $('score').innerHTML = '';
     for (const svg of p.pages) {
-      const d = document.createElement('div'); d.className = 'page'; d.innerHTML = svg; $('pages').appendChild(d);
+      const d = document.createElement('div');
+      d.className = 'page';
+      d.innerHTML = svg;
+      $('score').appendChild(d);
     }
     if (p.midi && customElements.get('midi-player')) {
       const pl = document.createElement('midi-player');
       pl.setAttribute('src', 'data:audio/midi;base64,' + p.midi);
       pl.setAttribute('sound-font', '');
-      $('playerBox').appendChild(pl);
+      $('player').appendChild(pl);
     }
   } catch (e) {
-    $('pages').innerHTML = '<div class="hint">Peržiūros parodyti nepavyko (' + e.message + '). Atidaryk natas MuseScore.</div>';
+    $('score').innerHTML = '';
+    const msg = document.createElement('p');
+    msg.className = 'muted';
+    msg.textContent = 'Peržiūros parodyti nepavyko: ' + e.message;
+    $('score').appendChild(msg);
   }
 }
-$('msOpen').onclick = async () => {
-  $('msOpen').disabled = true;
-  try { await post(`/api/job/${jobId}/musescore`); }
-  catch (e) { alert(e.message); }
-  finally { setTimeout(() => $('msOpen').disabled = false, 3000); }
-};
+$('open').onclick = () => post(`/api/job/${jobId}/open`).catch(e => alert(e.message));
+$('reveal').onclick = () => post(`/api/job/${jobId}/reveal`).catch(e => alert(e.message));
 
-loadStatus().then(renderFiles).catch(e => fail(e.message, ''));
+api('/api/status').then(s => {
+  engineOk = s.engine;
+  if (!engineOk) fail('Atpažinimo variklis neįdiegtas. Paleisk Idiegti.bat.');
+  render();
+}).catch(e => fail(e.message));
 </script>
-<!-- Grojimas (veikia, kai yra internetas) -->
 <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script>
 </body>
 </html>

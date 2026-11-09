@@ -1,4 +1,4 @@
-# PyInstaller receptas: pyinstaller NatuSkeneris.spec --noconfirm
+# PyInstaller receptas: pyinstaller Penkline.spec --noconfirm
 # Prieš tai: engine/homr turi būti atsiųstas, o modeliai parsisiųsti (run_homr.py --init --no-title).
 # PYTHONPATH turi apimti aplankus engine ir app.
 
@@ -30,9 +30,9 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="NatuSkeneris",
+    name="Penkline",
     console=False,
     icon="app/icon.ico",
     version=None,
 )
-coll = COLLECT(exe, a.binaries, a.datas, name="NatuSkeneris")
+coll = COLLECT(exe, a.binaries, a.datas, name="Penkline")

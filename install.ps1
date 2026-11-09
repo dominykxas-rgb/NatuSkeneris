@@ -1,4 +1,4 @@
-﻿# Natų skenerio diegimas (Windows 10/11)
+﻿# Penklinės diegimas (Windows 10/11)
 # Paleisk per Idiegti.bat
 
 $ErrorActionPreference = "Stop"
@@ -91,24 +91,13 @@ Step "Kuriama nuoroda darbalaukyje"
 & $VPy (Join-Path $Root "app\make_icon.py") | Out-Null
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $Shell = New-Object -ComObject WScript.Shell
-$Lnk = $Shell.CreateShortcut((Join-Path $Desktop "Natų skeneris.lnk"))
+$Lnk = $Shell.CreateShortcut((Join-Path $Desktop "Penklinė.lnk"))
 $Lnk.TargetPath = $VPyw
 $Lnk.Arguments = "`"$(Join-Path $Root 'app\natu_skeneris.py')`""
 $Lnk.WorkingDirectory = Join-Path $Root "app"
 $Lnk.IconLocation = Join-Path $Root "app\icon.ico"
-$Lnk.Description = "Natų nuotraukas ir PDF paverčia elektroninėmis natomis"
+$Lnk.Description = "Natų nuotraukos ir PDF į MusicXML"
 $Lnk.Save()
 
-# ------------------------------------------------------------------ 5. MuseScore
-Step "Tikrinama, ar įdiegtas MuseScore"
-$Ms = Get-ChildItem "$env:ProgramFiles\MuseScore*\bin\MuseScore*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-if ($Ms) {
-    Write-Host "Rastas: $($Ms.FullName)"
-} else {
-    Write-Host "MuseScore nerastas. Jis reikalingas .mscz failams ir natų taisymui." -ForegroundColor Yellow
-    $ans = Read-Host "Atidaryti MuseScore atsisiuntimo puslapį? (T/N)"
-    if ($ans -match "^[TtYy]") { Start-Process "https://musescore.org/download" }
-}
-
 Write-Host ""
-Write-Host "Viskas paruošta! Darbalaukyje atsirado nuoroda 'Natų skeneris'." -ForegroundColor Green
+Write-Host "Viskas paruošta! Darbalaukyje atsirado nuoroda 'Penklinė'." -ForegroundColor Green

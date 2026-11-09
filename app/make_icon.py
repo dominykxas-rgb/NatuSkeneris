@@ -1,19 +1,25 @@
-"""Sukuria programėlės piktogramą (icon.ico) diegimo metu."""
+"""Sukuria programos piktogramą (icon.ico): penklinė su nata."""
 
 from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-S = 256
+S = 1024
 img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
 d = ImageDraw.Draw(img)
-d.rounded_rectangle([8, 8, S - 8, S - 8], radius=56, fill=(47, 62, 158, 255))
+d.rounded_rectangle([0, 0, S - 1, S - 1], radius=220, fill=(43, 68, 196, 255))
 white = (255, 255, 255, 255)
-# Nata: galvutė, kotelis ir vėliavėlė
-d.ellipse([62, 156, 132, 206], fill=white)
-d.rectangle([118, 52, 134, 184], fill=white)
-d.polygon([(134, 52), (196, 76), (196, 110), (134, 86)], fill=white)
+for i in range(5):
+    y = 288 + i * 128
+    d.rectangle([150, y - 14, S - 150, y + 14], fill=white)
+# Natos galvutė (pasvirusi elipsė) ir kotelis
+head = Image.new("RGBA", (300, 210), (0, 0, 0, 0))
+ImageDraw.Draw(head).ellipse([0, 0, 299, 209], fill=white)
+head = head.rotate(22, expand=True, resample=Image.BICUBIC)
+img.alpha_composite(head, (300, 560))
+d.rectangle([586, 190, 622, 700], fill=white)
 
 out = Path(__file__).with_name("icon.ico")
-img.save(out, sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+img.resize((256, 256), Image.LANCZOS).save(
+    out, sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
 print("Piktograma:", out)
