@@ -45,7 +45,10 @@ jobs:
           mkdir -p engine && mv "homr-$c/homr" engine/
           cat > /tmp/stubs.py <<'EOF'
           import sys, types
-          sys.modules["rapidocr"] = types.SimpleNamespace(RapidOCR=None)
+          ocr = types.ModuleType("rapidocr")
+          class RapidOCR: pass
+          ocr.RapidOCR = RapidOCR
+          sys.modules["rapidocr"] = ocr
           sys.modules["pypdfium2"] = types.ModuleType("pypdfium2")
           EOF
           PYTHONPATH=engine python -c "
