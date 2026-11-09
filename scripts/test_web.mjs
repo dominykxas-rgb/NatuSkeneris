@@ -155,6 +155,7 @@ try {
       await page.screenshot({ path: `${out}/${name}-klaida.png`, fullPage: true });
       continue;
     }
+    await page.waitForFunction(() => document.getElementById("download").href.startsWith("blob:"), null, { timeout: 30e3 });
     const xml = await page.evaluate(async () => {
       const href = document.getElementById("download").href;
       return await (await fetch(href)).text();

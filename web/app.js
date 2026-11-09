@@ -382,6 +382,13 @@ async function showResult(xml) {
   $("score").innerHTML = '<p class="muted">Ruošiama peržiūra</p>';
   $("savedAt").textContent = DESKTOP ? desktopBackend.savedPath : "";
   $("title").value = resultName;
+  if (!DESKTOP) {
+    // Atsisiuntimas veikia iš karto, dar prieš įsikeliant peržiūrai
+    if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+    downloadUrl = URL.createObjectURL(new Blob([xml], { type: "application/vnd.recordare.musicxml+xml" }));
+    $("download").href = downloadUrl;
+    $("download").download = resultName + ".musicxml";
+  }
   try {
     await editor.load(xml);
     $("title").value = editor.title() || resultName;
@@ -393,11 +400,6 @@ async function showResult(xml) {
     p.className = "muted";
     p.textContent = "Peržiūros parodyti nepavyko. " + (DESKTOP ? "Failas išsaugotas." : "Failą vis tiek gali atsisiųsti.");
     $("score").appendChild(p);
-    if (!DESKTOP) {
-      const file = new File([xml], resultName + ".musicxml");
-      $("download").href = URL.createObjectURL(file);
-      $("download").download = file.name;
-    }
   }
 }
 
