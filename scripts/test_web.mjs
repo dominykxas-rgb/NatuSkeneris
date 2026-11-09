@@ -19,10 +19,12 @@ page.on("pageerror", (e) => consoleLines.push(`[pageerror] ${e.message}`));
 page.on("worker", (w) => w.on("console", (m) => consoleLines.push(`[worker] ${m.text()}`)));
 
 let ok = true;
+const results = [];
 const check = (cond, title, msg) => {
-  if (cond) notice(title, "gerai: " + msg);
-  else { ok = false; error(title, msg); }
+  results.push(`${cond ? "OK " : "KLAIDA "} ${title}: ${msg}`);
+  if (!cond) { ok = false; error(title, msg); }
 };
+const report = (title, msg) => results.push(`   ${title}: ${msg}`);
 
 async function testEditor(name) {
   const info = () => page.evaluate(() => {
@@ -64,7 +66,7 @@ async function testEditor(name) {
   check(xmlAfter.includes(`id="${target.id}"`) && /<type>half<\/type>/.test(xmlAfter), "Redaktorius: atsisiuntimas",
     "atsisiųstame MusicXML yra pakeitimai");
   const bad = await page.textContent("#measureStatus");
-  notice("Redaktorius: taktų patikra", bad || "(be pastabų)");
+  report("Taktų patikra", bad || "(be pastabų)");
   await page.screenshot({ path: `${out}/redaktorius.png` });
 
   await page.keyboard.press("Control+z");
@@ -111,11 +113,11 @@ async function testEditor(name) {
   await page.evaluate(() => { window.print = () => { window.__printed = true; }; });
   await page.click("#pdf");
   await page.waitForFunction(() => window.__printed === true, null, { timeout: 30e3 });
+  const svgPages = await page.evaluate(() => document.querySelectorAll("#printout .print-page").length);
   const pdfPath = `${out}/${name}.pdf`;
   await page.pdf({ path: pdfPath, preferCSSPageSize: true, printBackground: true });
   const pdf = fs.readFileSync(pdfPath).toString("latin1");
   const pdfPages = (pdf.match(/\/Type\s*\/Page[^s]/g) || []).length;
-  const svgPages = await page.evaluate(() => document.querySelectorAll("#printout .print-page").length);
   check(pdfPages >= 1 && pdfPages === svgPages && fs.statSync(pdfPath).size > 20000, "PDF",
     `${pdfPages} psl. (natų lapų ${svgPages}), ${(fs.statSync(pdfPath).size / 1024).toFixed(0)} KB`);
 }
@@ -190,6 +192,7 @@ try {
   error("Svetainės patikra", e.message);
   await page.screenshot({ path: `${out}/klaida.png`, fullPage: true }).catch(() => {});
 } finally {
+  if (results.length) console.log(`::notice title=Redaktoriaus patikra::${results.join("%0A")}`);
   fs.writeFileSync(`${out}/console.log`, consoleLines.join("\n"));
   const log = await page.evaluate(() => window.penkline ? window.penkline.log.join("\n") : "").catch(() => "");
   fs.writeFileSync(`${out}/penkline.log`, log);
