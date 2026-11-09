@@ -3,7 +3,16 @@
 Natų nuotraukas ir PDF paverčia MusicXML failais, kuriuos atsidaro MuseScore, Sibelius,
 Finale, Dorico ir kitos natų programos.
 
-## Paleidimas
+## Svetainė (kompiuteris ir telefonas)
+
+https://dominykxas-rgb.github.io/NatuSkeneris/
+
+Atpažinimas vyksta pačioje naršyklėje, nuotraukos niekur nesiunčiamos. Pirmą kartą atsisiunčiama
+apie 190 MB (atpažinimo modeliai ir Python), vėliau viskas paimama iš naršyklės atminties.
+Veikia naujausiose Chrome, Edge ir Samsung Internet versijose. Telefone naršyklės meniu
+pasirink „Įdiegti programą“ arba „Pridėti prie pagrindinio ekrano“.
+
+## Windows programa
 
 Atsisiųsk `Penkline-Windows.zip` iš [naujausios versijos](https://github.com/dominykxas-rgb/NatuSkeneris/releases/tag/naujausia),
 išarchyvuok ir paleisk `Penkline.exe`.
