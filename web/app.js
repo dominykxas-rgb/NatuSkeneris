@@ -70,7 +70,7 @@ function friendlyError(msg) {
   if (/No staffs found|No noteheads/i.test(msg)) {
     return "Lape neradau natų. Nufotografuok lapą tiesiai iš viršaus, prie gero apšvietimo.";
   }
-  if (/memory|Out of bounds|RangeError/i.test(msg)) {
+  if (/out of memory|memory access out of bounds|Array buffer allocation failed/i.test(msg)) {
     return "Pritrūko atminties. Pabandyk atpažinti mažiau lapų vienu kartu.";
   }
   return "Natų atpažinti nepavyko. Nufotografuok lapą tiesiai iš viršaus, prie gero apšvietimo, ir bandyk dar kartą.";

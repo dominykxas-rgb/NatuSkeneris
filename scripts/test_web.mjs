@@ -30,7 +30,11 @@ try {
   notice("Paruošimas", `${prepSec.toFixed(1)} s (Python + modeliai)`);
 
   for (const img of images) {
-    await page.click("#again").catch(() => {});
+    if (await page.isVisible("#again")) await page.click("#again");
+    if (await page.isVisible("#retry")) {
+      await page.click("#retry");
+      await page.evaluate(() => document.querySelectorAll(".sheet [data-a=del]").forEach((b) => b.click()));
+    }
     await page.setInputFiles("#fileInput", img);
     const t1 = Date.now();
     await page.click("#start");
@@ -64,7 +68,8 @@ try {
   // Telefono vaizdas
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: `${out}/telefonas-rezultatas.png`, fullPage: true });
-  await page.click("#again");
+  if (await page.isVisible("#again")) await page.click("#again");
+  if (await page.isVisible("#retry")) await page.click("#retry");
   await page.setInputFiles("#fileInput", images);
   await page.screenshot({ path: `${out}/telefonas-lapai.png` });
 } catch (e) {

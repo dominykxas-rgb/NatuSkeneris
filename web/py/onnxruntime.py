@@ -59,7 +59,8 @@ def _to_js_tensor(arr: np.ndarray):
     arr = np.ascontiguousarray(arr)
     if arr.dtype not in _NP_TO_ORT:
         arr = arr.astype(np.float32)
-    data = to_js(memoryview(arr).cast("B"))
+    # tobytes() veikia ir tuščiam masyvui (pvz. pradinis dekoderio kešas su ilgiu 0)
+    data = to_js(memoryview(arr.tobytes()))
     return js.penklineTensor(_NP_TO_ORT[arr.dtype], data, to_js(list(arr.shape)))
 
 
