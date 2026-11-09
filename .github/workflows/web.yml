@@ -1,0 +1,101 @@
+name: Svetainė
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "scripts/**"
+      - "app/photo_prep.py"
+      - "homr-version.txt"
+      - ".github/workflows/web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: svetaine
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Python paketai (modeliams atsisiųsti)
+        run: python -m pip install numpy opencv-python-headless Pillow onnxruntime requests
+
+      - name: homr variklis ir modeliai
+        run: |
+          c=$(tr -d '[:space:]' < homr-version.txt)
+          curl -sSL "https://github.com/liebharc/homr/archive/$c.tar.gz" | tar xz
+          mkdir -p engine && mv "homr-$c/homr" engine/
+          cat > /tmp/stubs.py <<'EOF'
+          import sys, types
+          sys.modules["rapidocr"] = types.SimpleNamespace(RapidOCR=None)
+          sys.modules["pypdfium2"] = types.ModuleType("pypdfium2")
+          EOF
+          PYTHONPATH=engine python -c "
+          exec(open('/tmp/stubs.py').read())
+          from homr.main import download_weights
+          download_weights(False, False, False)
+          "
+          ls -la engine/homr/segmentation/*.onnx engine/homr/transformer/*.onnx
+
+      - name: JavaScript bibliotekos
+        run: |
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund pyodide onnxruntime-web pdfjs-dist verovio
+          node -e "for (const p of ['pyodide','onnxruntime-web','pdfjs-dist','verovio']) console.log(p, require('./node_modules/'+p+'/package.json').version)"
+          ls node_modules/onnxruntime-web/dist | head -50
+
+      - name: Svetainės surinkimas
+        run: python scripts/build_web.py --engine engine/homr --node node_modules --out _site
+
+      - name: Patikra naršyklėje
+        timeout-minutes: 30
+        run: |
+          npm install --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+          mkdir -p test
+          base=https://raw.githubusercontent.com/Audiveris/audiveris/master/data/examples
+          curl -sSL "$base/chula.png" -o test/chula.png
+          curl -sSL "$base/BachInvention5.jpg" -o test/bach.jpg
+          (cd _site && python -m http.server 8000 > /dev/null 2>&1 &)
+          sleep 2
+          node scripts/test_web.mjs http://127.0.0.1:8000/ test/chula.png test/bach.jpg
+
+      - name: Patikros rezultatai
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: svetaines-patikra
+          path: test/web/
+          if-no-files-found: ignore
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

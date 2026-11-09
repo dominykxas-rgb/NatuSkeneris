@@ -3,6 +3,12 @@ name: Windows exe
 on:
   push:
     branches: [main]
+    paths:
+      - "app/**"
+      - "Penkline.spec"
+      - "requirements.txt"
+      - "homr-version.txt"
+      - ".github/workflows/windows-exe.yml"
   workflow_dispatch:
 
 permissions:

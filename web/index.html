@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Penklinė</title>
+<meta name="description" content="Natų nuotraukas ir PDF paverčia MusicXML failais. Viskas vyksta tavo naršyklėje.">
+<meta name="theme-color" content="#2b44c4">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1 class="wordmark">Penklinė</h1>
+  <span class="spacer"></span>
+  <span class="prep" id="prep" role="status"></span>
+</header>
+
+<main>
+  <section id="pick">
+    <div class="staff" id="drop">
+      <div class="empty" id="empty">
+        <p>Įmesk natų nuotraukas arba PDF</p>
+        <button class="btn" id="choose">Pasirinkti failus</button>
+      </div>
+      <ul class="sheets hidden" id="sheets"></ul>
+    </div>
+    <div class="bar">
+      <span class="count" id="count"></span>
+      <span class="spacer"></span>
+      <button class="btn primary" id="start" disabled>Atpažinti</button>
+    </div>
+    <input type="file" id="fileInput" multiple accept="image/*,.pdf,application/pdf" class="hidden">
+  </section>
+
+  <section id="work" class="hidden">
+    <div class="staff progress indet work" id="meter">
+      <div class="stage" id="stage" role="status">Ruošiama</div>
+      <button class="link" id="cancel">Atšaukti</button>
+    </div>
+  </section>
+
+  <section id="fail" class="hidden">
+    <div class="staff error">
+      <h2 id="errorTitle">Nepavyko</h2>
+      <p id="errorText"></p>
+      <button class="btn" id="retry">Grįžti</button>
+      <details style="margin-top:22px"><summary>Žurnalas</summary><pre id="errLog"></pre></details>
+    </div>
+  </section>
+
+  <section id="done" class="hidden">
+    <div class="result-head">
+      <h2 id="title"></h2>
+      <a class="btn primary" id="download">Atsisiųsti MusicXML</a>
+      <button class="btn hidden" id="share">Bendrinti</button>
+      <button class="btn" id="again">Nauji lapai</button>
+    </div>
+    <div id="player"></div>
+    <div class="score" id="score"></div>
+  </section>
+</main>
+
+<script type="module" src="app.js"></script>
+<script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0" defer></script>
+</body>
+</html>
