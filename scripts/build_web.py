@@ -26,6 +26,7 @@ PY_PACKAGES = ["numpy", "opencv-python", "pillow", "lzma", "typing-extensions"]
 
 def die(msg: str) -> None:
     print("KLAIDA:", msg)
+    print(f"::error title=Surinkimas::{msg}")
     sys.exit(1)
 
 
@@ -64,10 +65,16 @@ def vendor_pyodide(node: Path, out: Path) -> tuple[list[str], int]:
     version = json.loads((src / "package.json").read_text())["version"]
     dst = out / "vendor" / "pyodide"
     total = 0
-    for name in ("pyodide.mjs", "pyodide.asm.js", "pyodide.asm.wasm", "python_stdlib.zip",
-                 "pyodide-lock.json"):
-        copy(src / name, dst / name)
-        total += (dst / name).stat().st_size
+    for name in ("pyodide.mjs", "pyodide-lock.json"):
+        if not (src / name).exists():
+            die(f"Pyodide {version}: nėra {name}; yra {sorted(os.listdir(src))}")
+    core = [p for p in src.iterdir() if p.is_file() and (
+        p.name.startswith("pyodide") or p.name.startswith("python_stdlib")) and
+        p.suffix in (".js", ".mjs", ".wasm", ".zip", ".json") and not p.name.endswith(".d.ts")]
+    for p in core:
+        copy(p, dst / p.name)
+        total += p.stat().st_size
+    print(f"::notice title=Pyodide {version}::{', '.join(sorted(p.name for p in core))}")
 
     lock = json.loads((src / "pyodide-lock.json").read_text())
     packages = {k.lower(): v for k, v in lock["packages"].items()}
