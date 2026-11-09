@@ -44,6 +44,8 @@ def build_homr_zip(engine: Path, out: Path) -> None:
         for p in sorted((ROOT / "web" / "py").glob("*.py")):
             z.write(p, p.name)
         z.write(ROOT / "app" / "photo_prep.py", "photo_prep.py")
+        import typing_extensions  # vienas failas, homr jo reikia
+        z.write(typing_extensions.__file__, "typing_extensions.py")
 
 
 def find_models(engine: Path) -> list[Path]:

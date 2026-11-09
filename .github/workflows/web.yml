@@ -36,7 +36,7 @@ jobs:
           node-version: "22"
 
       - name: Python paketai (modeliams atsisiųsti)
-        run: python -m pip install numpy opencv-python-headless Pillow onnxruntime requests
+        run: python -m pip install numpy opencv-python-headless Pillow onnxruntime requests typing_extensions
 
       - name: homr variklis ir modeliai
         run: |
