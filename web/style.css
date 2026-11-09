@@ -196,6 +196,80 @@
   .add { width: 80px; height: 150px; }
   .sheet .tools { opacity: 1; }
   .empty p { font-size: 19px; }
-  .result-head h2 { flex-basis: 100%; }
+  .title-input { flex-basis: 100%; }
   .bar .btn.primary { flex: 1; padding: 12px 16px; }
+}
+
+/* Režimai: svetainė / Windows programa */
+html.web .desktop-only, html.desktop .web-only { display: none !important; }
+
+/* Pavadinimas redaguojamas vietoje */
+.title-input {
+  flex: 1; min-width: 200px; margin: 0; padding: 2px 6px; margin-left: -6px;
+  font-family: var(--wordmark); font-weight: 600; font-stretch: semi-condensed; font-size: 24px;
+  color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 4px;
+}
+.title-input:hover { border-color: var(--line); }
+.title-input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+
+/* Grotuvas: spalvos pagal temą (numatytasis yra baltas ir tamsioje temoje neįskaitomas) */
+midi-player { display: block; width: 100%; margin-bottom: 12px; }
+midi-player::part(control-panel) {
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+}
+midi-player::part(play-button) { background: var(--accent); color: var(--on-accent); border: 0; }
+midi-player::part(play-button):hover { filter: brightness(1.08); }
+midi-player::part(time), midi-player::part(current-time), midi-player::part(total-time) { color: var(--ink); }
+midi-player::part(seek-bar) { accent-color: var(--accent); }
+midi-player::part(loading-overlay) { background: var(--surface); color: var(--soft); }
+
+/* Taisymo įrankių juosta */
+.toolbar {
+  position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 6px 14px;
+  padding: 8px 10px; margin: 0 0 8px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.toolbar .group { display: flex; gap: 2px; }
+.tool {
+  min-width: 36px; height: 36px; padding: 0 8px; display: inline-grid; place-items: center;
+  border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--ink);
+  font-size: 18px; line-height: 1; cursor: pointer;
+}
+.tool.text { font-size: 14px; }
+.tool.acc { font-family: "Segoe UI Symbol", "Noto Music", "Bravura Text", serif; font-size: 20px; }
+.tool .dot-icon { font-size: 22px; line-height: 0; }
+.tool:hover:not(:disabled) { border-color: var(--line); }
+.tool.on { background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: var(--accent); color: var(--accent); }
+.tool:disabled { opacity: .35; cursor: default; }
+
+.measure-status { min-height: 1.5em; margin: 0 0 10px; color: var(--soft); font-size: 14px; }
+.measure-status .link { color: var(--accent); }
+
+/* Natos lape: lapas visada baltas, todėl spalvos fiksuotos */
+.score .page { cursor: default; }
+.score g.note, .score g.rest, .score g.mRest { cursor: pointer; }
+.score g.sel, .score g.sel * { fill: #2b44c4 !important; stroke: #2b44c4; }
+.score g.measure.bad > g.staff > path { stroke: #d03b2f !important; stroke-width: 18px; }
+
+@media (max-width: 640px) {
+  .toolbar { position: sticky; top: auto; bottom: 0; order: 2; margin: 0 -16px; border-radius: 0;
+             border-width: 1px 0 0; overflow-x: auto; flex-wrap: nowrap; gap: 10px;
+             padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  .toolbar .group { flex: 0 0 auto; }
+  .tool { min-width: 40px; height: 40px; }
+  #done { display: flex; flex-direction: column; }
+  #done .score { order: 1; }
+  .title-input { font-size: 21px; }
+}
+
+/* PDF: spausdinami tik natų lapai A4 formatu */
+#printout { display: none; }
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { background: #fff !important; }
+  body > *:not(#printout) { display: none !important; }
+  #printout { display: block; }
+  .print-page { width: 210mm; height: 296mm; page-break-after: always; break-after: page; overflow: hidden; }
+  .print-page:last-child { page-break-after: auto; break-after: auto; }
+  .print-page svg { width: 100%; height: 100%; display: block; }
 }

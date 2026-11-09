@@ -4,11 +4,11 @@
 
 from PyInstaller.utils.hooks import collect_all
 
-datas = [("app/web", "web")]
+datas = [("web", "web")]  # bendras langas su svetaine (su vendor/verovio)
 binaries = []
 hiddenimports = ["homr_entry", "photo_prep", "natu_skeneris"]
 
-for pkg in ["homr", "rapidocr", "verovio", "pypdfium2", "pypdfium2_raw", "pillow_heif",
+for pkg in ["homr", "rapidocr", "pypdfium2", "pypdfium2_raw", "pillow_heif",
             "onnxruntime", "cv2"]:
     d, b, h = collect_all(pkg)
     datas += d

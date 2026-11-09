@@ -82,6 +82,11 @@ if (-not (Test-Path (Join-Path $EngineDir "homr\main.py"))) {
     Remove-Item $Zip, $Tmp -Recurse -Force -ErrorAction SilentlyContinue
 }
 
+Step "Atsisiunčiama natų peržiūra (Verovio)"
+$VerovioDir = Join-Path $Root "web\vendor\verovio"
+New-Item -ItemType Directory -Force $VerovioDir | Out-Null
+Invoke-WebRequest "https://cdn.jsdelivr.net/npm/verovio@6.4.1/dist/verovio-toolkit-wasm.js" -OutFile (Join-Path $VerovioDir "verovio-toolkit-wasm.js")
+
 Step "Atsisiunčiami atpažinimo modeliai (~vieną kartą)"
 & $VPy (Join-Path $Root "app\run_homr.py") --init --no-title
 if ($LASTEXITCODE -ne 0) { Fail "Nepavyko atsisiųsti modelių. Patikrink interneto ryšį ir bandyk dar kartą." }

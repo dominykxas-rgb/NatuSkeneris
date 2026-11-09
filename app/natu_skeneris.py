@@ -32,11 +32,19 @@ else:
     APP_DIR = Path(__file__).resolve().parent
     ROOT_DIR = APP_DIR.parent
 ROOT_DIR.mkdir(parents=True, exist_ok=True)
-WEB_DIR = APP_DIR / "web"
+# Bendras langas su svetaine (aplankas web/)
+WEB_DIR = (APP_DIR if FROZEN else ROOT_DIR) / "web"
 WORK_DIR = ROOT_DIR / "darbai"
 OUTPUT_DIR = Path.home() / "Documents" / "Penklinė"
 IS_WINDOWS = os.name == "nt"
 NO_WINDOW = 0x08000000 if IS_WINDOWS else 0  # CREATE_NO_WINDOW
+
+STATIC_TYPES = {
+    ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+    ".mjs": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+    ".json": "application/json", ".webmanifest": "application/manifest+json",
+    ".svg": "image/svg+xml", ".png": "image/png", ".wasm": "application/wasm",
+}
 
 JOBS: dict[str, dict] = {}
 LAST_PING = time.time()
@@ -199,21 +207,6 @@ def unique_path(path: Path) -> Path:
         i += 1
 
 
-def preview(job: dict) -> dict:
-    import verovio
-
-    tk = verovio.toolkit()
-    tk.setOptions({
-        "pageWidth": 2100, "pageHeight": 2970, "scale": 40, "adjustPageHeight": True,
-        "footer": "none", "header": "auto", "breaks": "auto",
-    })
-    if not tk.loadFile(job["musicxml"]):
-        raise RuntimeError("Nepavyko atvaizduoti natų.")
-    pages = [tk.renderToSVG(i) for i in range(1, tk.getPageCount() + 1)]
-    midi = tk.renderToMIDI()
-    return {"pages": pages, "midi": midi}
-
-
 def open_file(path: Path) -> None:
     """Atidaro failą programa, kuri sistemoje priskirta tokiems failams."""
     if IS_WINDOWS:
@@ -265,6 +258,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def send_static(self, parts: list[str]) -> None:
+        rel = "/".join(parts) or "index.html"
+        path = (WEB_DIR / rel).resolve()
+        if WEB_DIR.resolve() not in path.parents or not path.is_file():
+            return self.send_json({"error": "nerasta"}, 404)
+        ctype = STATIC_TYPES.get(path.suffix.lower()) or "application/octet-stream"
+        self.send_file(path, ctype)
+
     def read_json(self) -> dict:
         n = int(self.headers.get("Content-Length") or 0)
         return json.loads(self.rfile.read(n) or b"{}")
@@ -290,8 +291,8 @@ class Handler(BaseHTTPRequestHandler):
         if not self.allowed(parts, parse_qs(url.query)):
             return self.send_json({"error": "draudžiama"}, 403)
         try:
-            if not parts:
-                return self.send_file(WEB_DIR / "index.html", "text/html; charset=utf-8")
+            if not parts or parts[0] != "api":
+                return self.send_static(parts)
             if parts == ["api", "status"]:
                 return self.send_json({"engine": engine_ready(), "output_dir": str(OUTPUT_DIR)})
             if len(parts) == 3 and parts[:2] == ["api", "job"]:
@@ -302,9 +303,6 @@ class Handler(BaseHTTPRequestHandler):
                                        ("status", "stage", "error", "saved", "name", "page",
                                         "pages")} |
                                       {"log": job["log"][-15:]})
-            if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "preview":
-                job = self.job(parts[2])
-                return self.send_json(preview(job))
             if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "download":
                 job = self.job(parts[2])
                 return self.send_file(Path(job["musicxml"]),
@@ -357,6 +355,14 @@ class Handler(BaseHTTPRequestHandler):
             if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "reveal":
                 show_in_folder(Path(self.job(parts[2])["saved"]))
                 return self.send_json({"ok": True})
+            if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "save":
+                job = self.job(parts[2])
+                xml = self.read_json().get("xml", "")
+                if "<score-partwise" not in xml[:2000]:
+                    return self.send_json({"error": "Netinkamas MusicXML"}, 400)
+                for target in (job["musicxml"], job["saved"]):
+                    Path(target).write_text(xml, encoding="utf-8")
+                return self.send_json({"ok": True})
             if parts == ["api", "open-folder"]:
                 show_in_folder(OUTPUT_DIR)
                 return self.send_json({"ok": True})
@@ -397,7 +403,7 @@ def watchdog(server: ThreadingHTTPServer) -> None:
 
 
 def selftest(image: str, out_dir: str) -> int:
-    """Patikra kūrimo metu: atpažįsta paveikslėlį ir atvaizduoja rezultatą."""
+    """Patikra kūrimo metu: atpažįsta paveikslėlį ir patikrina, ar yra langas."""
     out = Path(out_dir).resolve()
     out.mkdir(parents=True, exist_ok=True)
     # Exe be konsolės neturi stdout, todėl ataskaita rašoma į failą.
@@ -417,10 +423,10 @@ def selftest(image: str, out_dir: str) -> int:
         return 1
     xml = results[0].read_text(encoding="utf-8")
     notes = xml.count("<note")
-    pv = preview({"musicxml": str(results[0])})
-    (out / "preview.svg").write_text(pv["pages"][0], encoding="utf-8")
-    print(f"SELFTEST OK: notes={notes}, pages={len(pv['pages'])}, midi={bool(pv['midi'])}")
-    return 0 if notes > 10 and pv["pages"] else 1
+    web_ok = (WEB_DIR / "index.html").is_file() and \
+        (WEB_DIR / "vendor" / "verovio" / "verovio-toolkit-wasm.js").is_file()
+    print(f"SELFTEST {'OK' if notes > 10 and web_ok else 'FAIL'}: notes={notes}, web={web_ok}")
+    return 0 if notes > 10 and web_ok else 1
 
 
 def main() -> None:

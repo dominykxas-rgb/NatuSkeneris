@@ -61,7 +61,7 @@ jobs:
       - name: JavaScript bibliotekos
         run: |
           npm init -y > /dev/null
-          npm install --no-audit --no-fund pyodide onnxruntime-web pdfjs-dist verovio
+          npm install --no-audit --no-fund pyodide onnxruntime-web pdfjs-dist verovio@6.4.1
           node -e "for (const p of ['pyodide','onnxruntime-web','pdfjs-dist','verovio']) console.log(p, require('./node_modules/'+p+'/package.json').version)"
           ls node_modules/onnxruntime-web/dist | head -50
 
@@ -88,6 +88,13 @@ jobs:
           name: svetaines-patikra
           path: test/web/
           if-no-files-found: ignore
+
+      - name: Patikros nuotraukos svetainėje (patikra/)
+        if: always()
+        run: |
+          mkdir -p _site/patikra
+          cp test/web/*.png test/web/*.pdf _site/patikra/ 2>/dev/null || true
+          ls _site/patikra
 
       - uses: actions/upload-pages-artifact@v3
         with:

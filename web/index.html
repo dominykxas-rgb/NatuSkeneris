@@ -15,7 +15,8 @@
 <header>
   <h1 class="wordmark">Penklinė</h1>
   <span class="spacer"></span>
-  <span class="prep" id="prep" role="status"></span>
+  <span class="prep web-only" id="prep" role="status"></span>
+  <button class="link desktop-only" id="openFolder">Rezultatų aplankas</button>
 </header>
 
 <main>
@@ -53,12 +54,18 @@
 
   <section id="done" class="hidden">
     <div class="result-head">
-      <h2 id="title"></h2>
-      <a class="btn primary" id="download">Atsisiųsti MusicXML</a>
+      <input class="title-input" id="title" aria-label="Kūrinio pavadinimas" spellcheck="false" autocomplete="off">
+      <button class="btn primary desktop-only" id="open">Atidaryti</button>
+      <a class="btn primary web-only" id="download">Atsisiųsti MusicXML</a>
+      <button class="btn" id="pdf">PDF</button>
       <button class="btn hidden" id="share">Bendrinti</button>
+      <button class="btn desktop-only" id="reveal">Rodyti aplanke</button>
       <button class="btn" id="again">Nauji lapai</button>
     </div>
+    <p class="saved-at desktop-only" id="savedAt"></p>
     <div id="player"></div>
+    <div class="toolbar" id="toolbar" role="toolbar" aria-label="Natos taisymas"></div>
+    <p class="measure-status" id="measureStatus" role="status"></p>
     <div class="score" id="score"></div>
   </section>
 </main>

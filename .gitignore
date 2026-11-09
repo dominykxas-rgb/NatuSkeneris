@@ -9,3 +9,4 @@ nustatymai.json
 app/icon.ico
 __pycache__/
 *.zip
+web/vendor/

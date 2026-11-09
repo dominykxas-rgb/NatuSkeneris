@@ -7,7 +7,5 @@ rapidocr>=3.7.0,<4
 requests>=2.32.5,<3
 pypdfium2>=4,<6
 onnxruntime>=1.24.1,<2
-# natų peržiūra
-verovio>=5
 # iPhone HEIC nuotraukos
 pillow-heif

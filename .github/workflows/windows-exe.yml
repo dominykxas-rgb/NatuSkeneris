@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "web/**"
       - "Penkline.spec"
       - "requirements.txt"
       - "homr-version.txt"
@@ -63,6 +64,13 @@ jobs:
       - name: Variklio patikra (be exe)
         timeout-minutes: 20
         run: python app/run_homr.py --no-title test/variklis/chula.png
+
+      - name: Natų peržiūra (Verovio)
+        shell: pwsh
+        run: |
+          npm install --no-audit --no-fund --prefix vendor-tmp verovio@6.4.1
+          New-Item -ItemType Directory -Force web\vendor\verovio | Out-Null
+          Copy-Item vendor-tmp\node_modules\verovio\dist\verovio-toolkit-wasm.js web\vendor\verovio\
 
       - name: Exe kūrimas
         run: pyinstaller Penkline.spec --noconfirm
