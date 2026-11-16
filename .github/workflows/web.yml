@@ -60,7 +60,7 @@ jobs:
           from homr.main import download_weights
           download_weights(False, False, False)
           "
-          find engine/homr -name "*.onnx" -exec ls -la {} ;
+          find engine/homr -name "*.onnx" | xargs ls -la
 
       - name: JavaScript bibliotekos
         run: |
