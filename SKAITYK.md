@@ -34,6 +34,12 @@ Geriausiai atpažįstamos spausdintos natos, nufotografuotos tiesiai iš viršau
 Paleisk `Idiegti.bat`. Jis įdiegs Python, reikalingus paketus, atpažinimo modelius ir sukurs
 nuorodą darbalaukyje.
 
+## Tikslumas
+
+Tikslumas matuojamas su tikromis spausdintų natų telefono nuotraukomis
+([sheet-music-photos](https://github.com/liebharc/sheet-music-photos)), žr. `bench/`.
+Naudojama homr versija telefono nuotraukose daro apie 5 % natų ir pauzių klaidų (OMR-NED).
+
 ## Licencijos
 
 | Dalis | Projektas | Licencija |
