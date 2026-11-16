@@ -1,0 +1,95 @@
+name: Palyginimas
+
+# homr ir copisteria palyginimas su tikromis spausdintų natų telefono nuotraukomis
+# (liebharc/sheet-music-photos). Svetainės ir exe nekeičia.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/palyginimas.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: palyginimas
+  cancel-in-progress: true
+
+env:
+  HOMR: 2e6967bc1946b84d1ea9cbe80c4b84e817a1b9b7
+  COPISTERIA: c685f280914d91a694494588d9f6a376d7917eba
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: homr-raw, engine: homr, variant: raw, detector: "" }
+          - { name: homr-prep, engine: homr, variant: prep, detector: "" }
+          - { name: copisteria28m-raw, engine: copisteria, variant: raw, detector: 28m }
+          - { name: copisteria28m-prep, engine: copisteria, variant: prep, detector: 28m }
+          - { name: copisteria2m-raw, engine: copisteria, variant: raw, detector: 2m }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Bendri paketai
+        run: python -m pip install numpy opencv-python-headless Pillow pypdfium2 pillow-heif
+      - name: homr
+        if: matrix.engine == 'homr'
+        run: |
+          python -m pip install onnxruntime requests typing_extensions rapidocr
+          git clone -q https://github.com/liebharc/homr work/homr && git -C work/homr checkout -q "$HOMR"
+          (cd work/homr && PYTHONPATH=. python -m homr.main --init --no-title)
+      - name: copisteria
+        if: matrix.engine == 'copisteria'
+        run: |
+          python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install scipy huggingface_hub
+          git clone -q https://github.com/kobimusic/copisteria work/copisteria && git -C work/copisteria checkout -q "$COPISTERIA"
+          python -m pip install -e work/copisteria
+          (cd work/copisteria && hf download kobimusic/copista-${{ matrix.detector }} --include "*.pt" --local-dir models)
+          find work/copisteria/models -name "*.pt" | xargs ls -la
+      - name: Natų nuotraukos
+        run: git clone -q --depth 1 https://github.com/liebharc/sheet-music-photos work/smp
+      - name: Atpažinimas
+        run: |
+          python bench/run_variant.py --engine ${{ matrix.engine }} --homr work/homr --copisteria work/copisteria \
+            --detector "${{ matrix.detector }}" --data work/smp --variant ${{ matrix.variant }} --out out/${{ matrix.name }}
+          tail -5 out/${{ matrix.name }}/engine.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run-${{ matrix.name }}
+          path: out/${{ matrix.name }}/
+          retention-days: 14
+
+  score:
+    needs: run
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install numpy editdistance
+      - name: Vertintojas ir duomenys
+        run: |
+          git clone -q https://github.com/liebharc/homr work/homr && git -C work/homr checkout -q "$HOMR"
+          git clone -q --depth 1 https://github.com/liebharc/sheet-music-photos work/smp
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: run-*
+          path: out
+      - name: Įvertinimas
+        run: |
+          ls out
+          python bench/score.py --scorer work/homr --json out/palyginimas.json --title "homr vs copisteria" out/run-*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rezultatai
+          path: out/*.json

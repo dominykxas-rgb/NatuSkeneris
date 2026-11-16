@@ -67,7 +67,10 @@ def load_source(path: str) -> np.ndarray:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--homr", required=True, type=Path)
+    ap.add_argument("--homr", type=Path, help="homr checkout (variklis homr)")
+    ap.add_argument("--engine", choices=["homr", "copisteria"], default="homr")
+    ap.add_argument("--copisteria", type=Path, help="copisteria checkout su models/")
+    ap.add_argument("--detector", default="28m", help="copisteria detektorius: 28m arba 2m")
     ap.add_argument("--data", required=True, type=Path)
     ap.add_argument("--variant", required=True, choices=list(VARIANTS))
     ap.add_argument("--out", required=True, type=Path)
@@ -91,10 +94,19 @@ def main() -> None:
         s["note"] = result or ""
 
     t0 = time.time()
-    env = dict(os.environ, PYTHONPATH=str(args.homr.resolve()))
-    proc = subprocess.run([sys.executable, "-m", "homr.main", str(img_dir.resolve()), "--no-title"],
-                          cwd=str(args.homr), env=env, capture_output=True, text=True)
-    (out / "homr.log").write_text(proc.stdout + proc.stderr, encoding="utf-8")
+    if args.engine == "homr":
+        env = dict(os.environ, PYTHONPATH=str(args.homr.resolve()))
+        proc = subprocess.run([sys.executable, "-m", "homr.main", str(img_dir.resolve()), "--no-title"],
+                              cwd=str(args.homr), env=env, capture_output=True, text=True)
+    else:
+        pages = [str((img_dir / f"{s['id']}.png").resolve()) for s in items]
+        res_dir = (out / "copisteria").resolve()
+        proc = subprocess.run([sys.executable, "-m", "copisteria.pipeline", *pages, "--out", str(res_dir),
+                               "--detector", args.detector],
+                              cwd=str(args.copisteria), capture_output=True, text=True)
+        for x in res_dir.glob("*.musicxml"):
+            shutil.copy(x, img_dir / x.name)
+    (out / "engine.log").write_text(proc.stdout + proc.stderr, encoding="utf-8")
     seconds = time.time() - t0
 
     done = 0
@@ -104,7 +116,7 @@ def main() -> None:
         if xml.exists():
             shutil.copy(xml, out / f"{s['id']}.musicxml")
             done += 1
-    (out / "samples.json").write_text(json.dumps({"variant": args.variant, "homr": str(args.homr),
+    (out / "samples.json").write_text(json.dumps({"variant": args.variant, "engine": args.engine,
                                                   "seconds": seconds, "samples": items}, indent=1),
                                       encoding="utf-8")
     print(f"{args.variant}: {done}/{len(items)} atpažinta per {seconds:.0f} s")
