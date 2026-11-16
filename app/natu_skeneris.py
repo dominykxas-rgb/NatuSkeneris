@@ -355,14 +355,6 @@ class Handler(BaseHTTPRequestHandler):
             if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "reveal":
                 show_in_folder(Path(self.job(parts[2])["saved"]))
                 return self.send_json({"ok": True})
-            if len(parts) == 4 and parts[:2] == ["api", "job"] and parts[3] == "save":
-                job = self.job(parts[2])
-                xml = self.read_json().get("xml", "")
-                if "<score-partwise" not in xml[:2000]:
-                    return self.send_json({"error": "Netinkamas MusicXML"}, 400)
-                for target in (job["musicxml"], job["saved"]):
-                    Path(target).write_text(xml, encoding="utf-8")
-                return self.send_json({"ok": True})
             if parts == ["api", "open-folder"]:
                 show_in_folder(OUTPUT_DIR)
                 return self.send_json({"ok": True})

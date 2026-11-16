@@ -26,65 +26,7 @@ const check = (cond, title, msg) => {
 };
 const report = (title, msg) => results.push(`   ${title}: ${msg}`);
 
-async function testEditor(name) {
-  const info = () => page.evaluate(() => {
-    const ed = window.penkline.editor;
-    return ed.selected ? ed.score.info(ed.selected) : null;
-  });
-  // Paspaudžiam natą peržiūroje (ne pauzę)
-  const target = await page.evaluate(() => {
-    const ed = window.penkline.editor;
-    const id = ed.score.noteOrder.find((n) => {
-      const i = ed.score.info(n);
-      return i && !i.isRest && !i.isGrace;
-    });
-    const el = document.getElementById(id);
-    const r = el.getBoundingClientRect();
-    el.scrollIntoView({ block: "center" });
-    const r2 = el.getBoundingClientRect();
-    return { id, x: r2.left + r2.width / 2, y: r2.top + r2.height / 2, w: r.width };
-  });
-  await page.mouse.click(target.x, target.y);
-  const before = await info();
-  check(before && before.id === target.id, "Redaktorius: pasirinkimas", `paspausta ${target.id}, pasirinkta ${before && before.id}`);
-  check(await page.isEnabled('[data-act="up"]'), "Redaktorius: juosta", "mygtukai įjungti pasirinkus natą");
-
-  await page.keyboard.press("ArrowUp");
-  const up = await info();
-  check(up && (up.step !== before.step || up.octave !== before.octave), "Redaktorius: aukštis",
-    `${before.step}${before.octave} → ${up && up.step}${up && up.octave}`);
-
-  await page.click('[data-act="dur:half"]');
-  const half = await info();
-  check(half && half.type === "half", "Redaktorius: trukmė", `${before.type} → ${half && half.type}`);
-
-  await page.click('[data-act="sharp"]');
-  const sharp = await info();
-  check(sharp && sharp.alter === 1 && sharp.accidental === "sharp", "Redaktorius: diezas", JSON.stringify(sharp));
-
-  const xmlAfter = await page.evaluate(async () => (await (await fetch(document.getElementById("download").href)).text()));
-  check(xmlAfter.includes(`id="${target.id}"`) && /<type>half<\/type>/.test(xmlAfter), "Redaktorius: atsisiuntimas",
-    "atsisiųstame MusicXML yra pakeitimai");
-  const bad = await page.textContent("#measureStatus");
-  report("Taktų patikra", bad || "(be pastabų)");
-  await page.screenshot({ path: `${out}/redaktorius.png` });
-
-  await page.keyboard.press("Control+z");
-  await page.keyboard.press("Control+z");
-  await page.keyboard.press("Control+z");
-  const back = await info();
-  check(back && back.step === before.step && back.octave === before.octave && back.type === before.type && back.alter === before.alter,
-    "Redaktorius: atšaukti", JSON.stringify(back));
-  await page.keyboard.press("Control+y");
-  const redo = await info();
-  check(redo && redo.step === up.step, "Redaktorius: grąžinti", JSON.stringify(redo));
-  await page.keyboard.press("Control+z");
-
-  await page.fill("#title", "Bandomasis kūrinys ąčę");
-  await page.press("#title", "Enter");
-  await page.waitForTimeout(300);
-  check(await page.evaluate(() => window.penkline.editor.title()) === "Bandomasis kūrinys ąčę", "Redaktorius: pavadinimas", "pakeistas");
-
+async function testResult(name) {
   // Tamsi tema ir grotuvas
   await page.emulateMedia({ colorScheme: "dark" });
   await page.waitForFunction(() => document.querySelector("midi-player")?.shadowRoot?.querySelector("[part=control-panel]"), null, { timeout: 60e3 })
@@ -93,9 +35,8 @@ async function testEditor(name) {
   const player = await page.evaluate(() => {
     const panel = document.querySelector("midi-player")?.shadowRoot?.querySelector("[part=control-panel]");
     if (!panel) return null;
-    const cs = getComputedStyle(panel);
     const time = panel.querySelector("[part=time]") || panel;
-    return { bg: cs.backgroundColor, color: getComputedStyle(time).color };
+    return { bg: getComputedStyle(panel).backgroundColor, color: getComputedStyle(time).color };
   });
   const lum = (c) => {
     const m = (c || "").match(/\d+(\.\d+)?/g);
@@ -168,17 +109,12 @@ try {
     notice(`${name}`, `${sec.toFixed(1)} s, ${notes} natų, ${measures} taktų, peržiūra: ${hasScore ? "yra" : "NĖRA"}`);
     if (notes < 10) { ok = false; error(`${name}`, `Per mažai natų: ${notes}`); }
     if (!hasScore) { ok = false; error(`${name}`, "Neatsirado natų peržiūra"); }
-    if (hasScore && img === images[0]) await testEditor(name);
+    if (hasScore && img === images[0]) await testResult(name);
   }
 
   // Telefono vaizdas
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(800);
-  await page.evaluate(() => {
-    const ed = window.penkline.editor;
-    ed.select(ed.score.noteOrder[3], true);
-  });
-  await page.waitForTimeout(600);
   await page.screenshot({ path: `${out}/telefonas-rezultatas.png` });
   await page.emulateMedia({ colorScheme: "dark" });
   await page.waitForTimeout(300);
@@ -193,7 +129,7 @@ try {
   error("Svetainės patikra", e.message);
   await page.screenshot({ path: `${out}/klaida.png`, fullPage: true }).catch(() => {});
 } finally {
-  if (results.length) console.log(`::notice title=Redaktoriaus patikra::${results.join("%0A")}`);
+  if (results.length) console.log(`::notice title=Rezultato patikra::${results.join("%0A")}`);
   fs.writeFileSync(`${out}/console.log`, consoleLines.join("\n"));
   const log = await page.evaluate(() => window.penkline ? window.penkline.log.join("\n") : "").catch(() => "");
   fs.writeFileSync(`${out}/penkline.log`, log);
