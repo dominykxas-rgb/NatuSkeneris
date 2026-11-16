@@ -50,14 +50,17 @@ def build_homr_zip(engine: Path, out: Path) -> None:
 
 
 def find_models(engine: Path) -> list[Path]:
-    picks = []
+    """Visi homr modeliai (fp32), kuriuos parsiuntė download_weights."""
     for pattern in ("segmentation/segnet_*.onnx", "transformer/encoder_*.onnx",
                     "transformer/decoder_*.onnx"):
         found = [p for p in engine.glob(pattern) if not p.stem.endswith("_fp16")]
         if len(found) != 1:
             die(f"modelis {pattern}: rasta {len(found)} ({[p.name for p in found]})")
-        picks.append(found[0])
-    return picks
+    models = sorted(p for p in engine.rglob("*.onnx") if not p.stem.endswith("_fp16"))
+    names = [p.name for p in models]
+    if len(names) != len(set(names)):
+        die(f"pasikartojantys modelių pavadinimai: {names}")
+    return models
 
 
 def vendor_pyodide(node: Path, out: Path) -> tuple[list[str], int]:
