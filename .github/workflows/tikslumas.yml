@@ -1,0 +1,80 @@
+name: Tikslumas
+
+# Atpažinimo tikslumo matavimas su tikromis spausdintų natų nuotraukomis
+# (liebharc/sheet-music-photos). Svetainės ir exe nekeičia.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "bench/**"
+      - ".github/workflows/tikslumas.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: tikslumas
+  cancel-in-progress: true
+
+env:
+  HOMR_NEW: 2e6967bc1946b84d1ea9cbe80c4b84e817a1b9b7
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [old, new]
+        variant: [raw, prep, clahe, shading]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Paketai
+        run: python -m pip install numpy opencv-python-headless Pillow onnxruntime requests typing_extensions rapidocr pypdfium2 pillow-heif
+      - name: homr ir modeliai
+        run: |
+          if [ "${{ matrix.version }}" = old ]; then c=$(tr -d '[:space:]' < homr-version.txt); else c=$HOMR_NEW; fi
+          git clone -q https://github.com/liebharc/homr work/homr && git -C work/homr checkout -q "$c"
+          (cd work/homr && PYTHONPATH=. python -m homr.main --init --no-title)
+      - name: Natų nuotraukos
+        run: git clone -q --depth 1 https://github.com/liebharc/sheet-music-photos work/smp
+      - name: Atpažinimas
+        run: python bench/run_variant.py --homr work/homr --data work/smp --variant ${{ matrix.variant }} --out out/${{ matrix.version }}-${{ matrix.variant }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run-${{ matrix.version }}-${{ matrix.variant }}
+          path: out/${{ matrix.version }}-${{ matrix.variant }}/
+          retention-days: 14
+
+  score:
+    needs: run
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Paketai
+        run: python -m pip install numpy editdistance
+      - name: Vertintojas ir duomenys
+        run: |
+          git clone -q https://github.com/liebharc/homr work/homr && git -C work/homr checkout -q "$HOMR_NEW"
+          git clone -q --depth 1 https://github.com/liebharc/sheet-music-photos work/smp
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: run-*
+          path: out
+      - name: Įvertinimas
+        run: |
+          ls out
+          python bench/score.py --scorer work/homr --json out/visi.json --title "Visi variantai" out/run-*
+          python bench/score.py --scorer work/homr --json out/naujas.json --title "Naujas homr: paruošimo variantai" out/run-new-*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rezultatai
+          path: out/*.json
