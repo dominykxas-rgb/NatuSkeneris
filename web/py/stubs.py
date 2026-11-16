@@ -17,7 +17,18 @@ def install() -> None:
             raise RuntimeError("Pavadinimo atpažinimas naršyklėje nepalaikomas")
 
     rapidocr.RapidOCR = RapidOCR
+    utils = types.ModuleType("rapidocr.utils")
+    output = types.ModuleType("rapidocr.utils.output")
+
+    class RapidOCROutput:
+        pass
+
+    output.RapidOCROutput = RapidOCROutput
+    utils.output = output
+    rapidocr.utils = utils
     sys.modules.setdefault("rapidocr", rapidocr)
+    sys.modules.setdefault("rapidocr.utils", utils)
+    sys.modules.setdefault("rapidocr.utils.output", output)
 
     pdfium = types.ModuleType("pypdfium2")
     sys.modules.setdefault("pypdfium2", pdfium)

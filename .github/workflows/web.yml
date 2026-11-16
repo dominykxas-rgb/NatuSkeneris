@@ -49,6 +49,10 @@ jobs:
           class RapidOCR: pass
           ocr.RapidOCR = RapidOCR
           sys.modules["rapidocr"] = ocr
+          out = types.ModuleType("rapidocr.utils.output")
+          out.RapidOCROutput = RapidOCR
+          sys.modules["rapidocr.utils"] = types.ModuleType("rapidocr.utils")
+          sys.modules["rapidocr.utils.output"] = out
           sys.modules["pypdfium2"] = types.ModuleType("pypdfium2")
           EOF
           PYTHONPATH=engine python -c "
