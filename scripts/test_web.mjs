@@ -27,6 +27,18 @@ const check = (cond, title, msg) => {
 const report = (title, msg) => results.push(`   ${title}: ${msg}`);
 
 async function testResult(name) {
+  // Instrumento pasirinkimas
+  const plain = await page.evaluate(async () => (await (await fetch(document.getElementById("download").href)).text()));
+  await page.selectOption("#instrument", "violin");
+  await page.waitForFunction(() => window.penkline.xml.includes("strings.violin"), null, { timeout: 10e3 }).catch(() => {});
+  const violin = await page.evaluate(async () => (await (await fetch(document.getElementById("download").href)).text()));
+  check(violin.includes("<part-name>Smuikas</part-name>") && violin.includes("strings.violin") &&
+    (violin.match(/<note[ >]/g) || []).length === (plain.match(/<note[ >]/g) || []).length,
+    "Instrumentas", "smuikas įrašytas, natų skaičius nepakito");
+  await page.selectOption("#instrument", "");
+  const back = await page.evaluate(async () => (await (await fetch(document.getElementById("download").href)).text()));
+  check(back === plain, "Instrumentas: kaip atpažinta", "be pasirinkimo failas nepakeistas");
+
   // Tamsi tema ir grotuvas
   await page.emulateMedia({ colorScheme: "dark" });
   await page.waitForFunction(() => document.querySelector("midi-player")?.shadowRoot?.querySelector("[part=control-panel]"), null, { timeout: 60e3 })

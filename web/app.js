@@ -3,6 +3,7 @@
 // - Windows programoje atpažinimą atlieka vietinis serveris (adrese yra #t=raktas).
 
 import { ScorePreview } from "./preview.js";
+import { INSTRUMENTS, applyInstrument } from "./instruments.js";
 
 const $ = (id) => document.getElementById(id);
 const TOKEN = new URLSearchParams(location.hash.slice(1)).get("t");
@@ -18,7 +19,8 @@ let logLines = [];
 let resultName = "natos";
 
 const preview = new ScorePreview($("score"));
-let resultXml = "";
+let resultXml = ""; // kaip atpažinta
+let currentXml = ""; // su pasirinktu instrumentu
 
 // ---------------------------------------------------------------- būsenos
 
@@ -318,7 +320,7 @@ function fileName() {
 function refreshDownload() {
   if (DESKTOP) return;
   if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-  const file = new File([resultXml], fileName() + ".musicxml", { type: "application/vnd.recordare.musicxml+xml" });
+  const file = new File([currentXml], fileName() + ".musicxml", { type: "application/vnd.recordare.musicxml+xml" });
   downloadUrl = URL.createObjectURL(file);
   $("download").href = downloadUrl;
   $("download").download = file.name;
@@ -357,9 +359,11 @@ async function showResult(xml) {
   $("savedAt").textContent = DESKTOP ? desktopBackend.savedPath : "";
   $("title").textContent = resultName;
   resultXml = xml;
+  $("instrument").value = "";
+  currentXml = xml;
   refreshDownload(); // atsisiuntimas veikia iš karto, dar prieš įsikeliant peržiūrai
   try {
-    await preview.load(xml);
+    await preview.load(currentXml);
     refreshMidi();
   } catch (err) {
     $("score").innerHTML = "";
@@ -371,6 +375,25 @@ async function showResult(xml) {
 }
 
 $("pdf").onclick = () => preview.print(fileName());
+
+// Instrumento pasirinkimas: įrašomas į MusicXML (be pasirinkimo failas nekeičiamas)
+for (const inst of INSTRUMENTS) {
+  const o = document.createElement("option");
+  o.value = inst.id;
+  o.textContent = inst.name;
+  $("instrument").appendChild(o);
+}
+$("instrument").onchange = async () => {
+  currentXml = applyInstrument(resultXml, $("instrument").value);
+  refreshDownload();
+  if (DESKTOP) {
+    await post(`/api/job/${desktopBackend.jobId}/save`, { xml: currentXml }).catch((e) => alert("Nepavyko išsaugoti: " + e.message));
+  }
+  try {
+    await preview.load(currentXml);
+    refreshMidi();
+  } catch { /* peržiūra neprivaloma */ }
+};
 $("open").onclick = () => post(`/api/job/${desktopBackend.jobId}/open`).catch((e) => alert(e.message));
 $("reveal").onclick = () => post(`/api/job/${desktopBackend.jobId}/reveal`).catch((e) => alert(e.message));
 
@@ -385,5 +408,5 @@ if (!DESKTOP && "serviceWorker" in navigator && location.protocol === "https:") 
 window.penkline = {
   get prepared() { return DESKTOP || webBackend.prepared; },
   get log() { return logLines; },
-  get xml() { return resultXml; },
+  get xml() { return currentXml; },
 };
