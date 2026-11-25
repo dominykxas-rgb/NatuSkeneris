@@ -1,8 +1,8 @@
 // Penklinė: atpažinimas atskirame naršyklės procese (Web Worker).
 // Python (Pyodide) vykdo homr kodą, ONNX Runtime Web vykdo modelius.
 
-import { loadPyodide } from "./vendor/pyodide/pyodide.mjs";
-import * as ort from "./vendor/ort/ort.min.mjs";
+// Bibliotekos įkeliamos pagal config.json (jų aplankų pavadinimuose yra versija).
+let ort = null;
 
 const BASE = new URL("./", import.meta.url).href;
 let config = null;      // config.json: modelių failai ir dydžiai
@@ -11,11 +11,6 @@ let ready = null;       // Promise, kai viskas paruošta
 const sessions = [];    // ort.InferenceSession pagal id
 const sessionByName = new Map();
 const modelBytes = new Map();
-
-ort.env.wasm.wasmPaths = BASE + "vendor/ort/";
-ort.env.wasm.numThreads = self.crossOriginIsolated
-  ? Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1))
-  : 1;
 
 const post = (type, data = {}) => self.postMessage({ type, ...data });
 
@@ -98,6 +93,12 @@ async function fetchModel(name) {
 async function prepare() {
   const t0 = performance.now();
   config = await (await fetch(BASE + "config.json", { cache: "no-cache" })).json();
+  const { loadPyodide } = await import(BASE + config.paths.pyodide + "pyodide.mjs");
+  ort = await import(BASE + config.paths.ort + "ort.min.mjs");
+  ort.env.wasm.wasmPaths = BASE + config.paths.ort;
+  ort.env.wasm.numThreads = self.crossOriginIsolated
+    ? Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1))
+    : 1;
 
   const total = config.models.reduce((s, m) => s + m.size, 0) + config.pythonBytes;
   let done = 0;
@@ -111,12 +112,12 @@ async function prepare() {
     modelBytes.set(m.file, await fetchWithProgress(BASE + "models/" + m.file, bump));
   }));
 
-  pyodide = await loadPyodide({ indexURL: BASE + "vendor/pyodide/" });
+  pyodide = await loadPyodide({ indexURL: BASE + config.paths.pyodide });
   bump(config.pythonBytes * 0.3);
   await pyodide.loadPackage(config.packages, { messageCallback: () => {} });
   bump(config.pythonBytes * 0.4);
 
-  const homr = await (await fetch(BASE + "homr.zip")).arrayBuffer();
+  const homr = await (await fetch(BASE + config.paths.homr)).arrayBuffer();
   pyodide.unpackArchive(homr, "zip", { extractDir: "/penkline" });
   bump(config.pythonBytes * 0.3);
 

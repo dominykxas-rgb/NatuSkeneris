@@ -124,6 +124,18 @@ try {
     if (hasScore && img === images[0]) await testResult(name);
   }
 
+  // Atmintis: po perkrovimo dideli failai imami iš atminties, programos failai nauji
+  await page.reload();
+  await page.waitForFunction(() => window.penkline && window.penkline.prepared, null, { timeout: 5 * 60e3 });
+  const cache = await page.evaluate(async () => {
+    const keys = await caches.keys();
+    const data = keys.includes("penkline-data") ? (await (await caches.open("penkline-data")).keys()).length : 0;
+    return { keys, data, controlled: !!navigator.serviceWorker.controller,
+             options: document.querySelectorAll("#instrument option").length };
+  });
+  check(cache.controlled && cache.data > 5 && cache.options > 10, "Atmintis po perkrovimo",
+    `${JSON.stringify(cache.keys)}, didelių failų ${cache.data}, instrumentų sąraše ${cache.options}`);
+
   // Telefono vaizdas
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(800);

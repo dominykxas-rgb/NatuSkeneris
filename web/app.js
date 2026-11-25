@@ -127,10 +127,14 @@ const webBackend = {
   },
 };
 
+let webConfigPromise = null;
+const webConfig = () => (webConfigPromise ??= fetch("config.json", { cache: "no-cache" }).then((r) => r.json()));
+
 let pdfjs = null;
 async function pdfToImages(file) {
-  pdfjs ??= await import("./vendor/pdfjs/pdf.min.mjs");
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL("vendor/pdfjs/pdf.worker.min.mjs", import.meta.url).href;
+  const dir = (await webConfig()).paths.pdfjs;
+  pdfjs ??= await import(new URL(dir + "pdf.min.mjs", import.meta.url).href);
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(dir + "pdf.worker.min.mjs", import.meta.url).href;
   const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
   const out = [];
   for (let n = 1; n <= doc.numPages; n++) {
@@ -363,6 +367,7 @@ async function showResult(xml) {
   currentXml = xml;
   refreshDownload(); // atsisiuntimas veikia iš karto, dar prieš įsikeliant peržiūrai
   try {
+    if (!DESKTOP) preview.verovioSrc = (await webConfig()).paths.verovio;
     await preview.load(currentXml);
     refreshMidi();
   } catch (err) {
@@ -401,7 +406,7 @@ $("reveal").onclick = () => post(`/api/job/${desktopBackend.jobId}/reveal`).catc
 
 render();
 backend.start();
-if (!DESKTOP && "serviceWorker" in navigator && location.protocol === "https:") {
+if (!DESKTOP && "serviceWorker" in navigator && window.isSecureContext) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 // Testams

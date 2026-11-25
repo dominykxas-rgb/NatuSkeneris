@@ -31,6 +31,7 @@ export function loadVerovio(src = "vendor/verovio/verovio-toolkit-wasm.js") {
 export class ScorePreview {
   constructor(container) {
     this.el = container;
+    this.verovioSrc = "vendor/verovio/verovio-toolkit-wasm.js"; // svetainėje nustato app.js
     this.tk = null;
     this.xml = "";
     let w = window.innerWidth;
@@ -40,7 +41,7 @@ export class ScorePreview {
   }
 
   async load(xml) {
-    this.tk = await loadVerovio();
+    this.tk = await loadVerovio(this.verovioSrc);
     this.xml = xml;
     this.render();
   }

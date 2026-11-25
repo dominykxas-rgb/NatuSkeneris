@@ -66,7 +66,7 @@ def find_models(engine: Path) -> list[Path]:
 def vendor_pyodide(node: Path, out: Path) -> tuple[list[str], int]:
     src = node / "pyodide"
     version = json.loads((src / "package.json").read_text())["version"]
-    dst = out / "vendor" / "pyodide"
+    dst = out / "vendor" / f"pyodide-{version}"
     total = 0
     for name in ("pyodide.mjs", "pyodide-lock.json"):
         if not (src / name).exists():
@@ -111,9 +111,13 @@ def vendor_pyodide(node: Path, out: Path) -> tuple[list[str], int]:
     return wanted, total
 
 
+def pkg_version(node: Path, name: str) -> str:
+    return json.loads((node / name / "package.json").read_text())["version"]
+
+
 def vendor_ort(node: Path, out: Path) -> None:
     dist = node / "onnxruntime-web" / "dist"
-    dst = out / "vendor" / "ort"
+    dst = out / "vendor" / f"ort-{pkg_version(node, 'onnxruntime-web')}"
     bundle = next((dist / n for n in ("ort.wasm.min.mjs", "ort.min.mjs") if (dist / n).exists()), None)
     if bundle is None:
         die(f"onnxruntime-web: nerastas ort.wasm.min.mjs / ort.min.mjs ({sorted(os.listdir(dist))})")
@@ -128,10 +132,11 @@ def vendor_ort(node: Path, out: Path) -> None:
 
 def vendor_misc(node: Path, out: Path) -> None:
     pdf = node / "pdfjs-dist" / "build"
-    copy(pdf / "pdf.min.mjs", out / "vendor" / "pdfjs" / "pdf.min.mjs")
-    copy(pdf / "pdf.worker.min.mjs", out / "vendor" / "pdfjs" / "pdf.worker.min.mjs")
+    pdf_dir = out / "vendor" / f"pdfjs-{pkg_version(node, 'pdfjs-dist')}"
+    copy(pdf / "pdf.min.mjs", pdf_dir / "pdf.min.mjs")
+    copy(pdf / "pdf.worker.min.mjs", pdf_dir / "pdf.worker.min.mjs")
     copy(node / "verovio" / "dist" / "verovio-toolkit-wasm.js",
-         out / "vendor" / "verovio" / "verovio-toolkit-wasm.js")
+         out / "vendor" / f"verovio-{pkg_version(node, 'verovio')}" / "verovio-toolkit-wasm.js")
 
 
 def make_icons(out: Path) -> None:
@@ -196,8 +201,12 @@ def main() -> None:
     (out / ".nojekyll").write_text("")
 
     build_homr_zip(args.engine, out / "homr.zip")
+    # Pavadinime turinio santrauka: pasikeitus turiniui keičiasi adresas, todėl telefonas
+    # naujus failus siunčiasi tik tada, kai jie tikrai pasikeitė.
+    homr_name = f"homr-{hashlib.sha256((out / 'homr.zip').read_bytes()).hexdigest()[:12]}.zip"
+    (out / "homr.zip").rename(out / homr_name)
     packages, py_bytes = vendor_pyodide(args.node, out)
-    py_bytes += (out / "homr.zip").stat().st_size
+    py_bytes += (out / homr_name).stat().st_size
     vendor_ort(args.node, out)
     vendor_misc(args.node, out)
     make_icons(out)
@@ -216,7 +225,22 @@ def main() -> None:
     sw = out / "sw.js"
     sw.write_text(sw.read_text(encoding="utf-8").replace("__BUILD__", build), encoding="utf-8")
 
-    config = {"build": build, "models": models, "packages": packages, "pythonBytes": py_bytes}
+    node = args.node
+    paths = {
+        "pyodide": f"vendor/pyodide-{pkg_version(node, 'pyodide')}/",
+        "ort": f"vendor/ort-{pkg_version(node, 'onnxruntime-web')}/",
+        "pdfjs": f"vendor/pdfjs-{pkg_version(node, 'pdfjs-dist')}/",
+        "verovio": f"vendor/verovio-{pkg_version(node, 'verovio')}/verovio-toolkit-wasm.js",
+        "homr": homr_name,
+    }
+    for key, rel in paths.items():
+        if not (out / rel).exists():
+            die(f"nėra {rel}")
+    # Ką telefono atmintyje laikyti; visa kita iš ankstesnių versijų ištrinama
+    keep = [paths["pyodide"], paths["ort"], paths["pdfjs"], paths["verovio"], homr_name] + \
+        [f"models/{m['file']}" for m in models]
+    config = {"build": build, "models": models, "packages": packages, "pythonBytes": py_bytes,
+              "paths": paths, "keep": keep}
     (out / "config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
 
     total = sum(p.stat().st_size for p in out.rglob("*") if p.is_file())
